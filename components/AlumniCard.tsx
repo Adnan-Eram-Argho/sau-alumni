@@ -5,6 +5,7 @@ import CountryFlag from "@/components/CountryFlag";
 export type AlumniCardData = {
   id: string;
   full_name: string;
+  avatar_url: string | null;
   graduation_year: number | null;
   status: string | null;
   current_designation: string | null;
@@ -55,6 +56,24 @@ export default function AlumniCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-1.5 font-semibold">
+            {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatar_url}
+                alt=""
+                className="h-8 w-8 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sau text-xs font-bold text-white">
+                {profile.full_name
+                  .split(" ")
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "?"}
+              </span>
+            )}
             <span className="truncate">{profile.full_name}</span>
             {profile.is_verified && (
               <span title="Verified alumni" className="shrink-0 text-sm">

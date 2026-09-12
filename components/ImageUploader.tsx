@@ -5,14 +5,19 @@ import { createClient } from "@/utils/supabase/client";
 
 export type UploadedImage = { path: string; publicUrl: string };
 
-const BUCKET = "notice-images";
-
-// Chobi barle: 1) resize (max 1200px) — EXIF/GPS muchhe dey,
-// 2) WEBP-e convert (space bachai!), 3) sora Storage-te upload
+// Multi-purpose: notice-image (default) ba avatar —
+// bucket / maxSide / square prop diye control hoy.
+// Resize + EXIF-strip + WebP sob built-in.
 export default function ImageUploader({
   onUploaded,
+  bucket = "notice-images",
+  maxSide = 1200,
+  square = false,
 }: {
   onUploaded?: (img: UploadedImage) => void;
+  bucket?: string;
+  maxSide?: number;
+  square?: boolean;
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,30 +28,37 @@ export default function ImageUploader({
     setError(null);
     setUploading(true);
     try {
-      // Resize + EXIF strip
       const bitmap = await createImageBitmap(file);
-      const maxSide = 1200;
-      const scale = Math.min(
-        1,
-        maxSide / Math.max(bitmap.width, bitmap.height)
-      );
-      const width = Math.round(bitmap.width * scale);
-      const height = Math.round(bitmap.height * scale);
+
+      // Avatar (square) hole center-crop
+      let sx = 0;
+      let sy = 0;
+      let sw = bitmap.width;
+      let sh = bitmap.height;
+      if (square) {
+        const side = Math.min(sw, sh);
+        sx = Math.round((sw - side) / 2);
+        sy = Math.round((sh - side) / 2);
+        sw = side;
+        sh = side;
+      }
+
+      const scale = Math.min(1, maxSide / Math.max(sw, sh));
+      const width = Math.round(sw * scale);
+      const height = Math.round(sh * scale);
 
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("canvas");
-      ctx.drawImage(bitmap, 0, 0, width, height);
+      ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, width, height);
 
-      // Prio WEBP — ~25-35% chhoto file. Browser na parle
-      // toBlob nijei PNG-e neme jay — sei khetre JPEG fallback
+      // WebP prio — browser na parle JPEG
       let blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/webp", 0.85)
       );
       let contentType = "image/webp";
-
       if (!blob || blob.type !== "image/webp") {
         blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, "image/jpeg", 0.85)
@@ -67,19 +79,17 @@ export default function ImageUploader({
         .slice(2, 10)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, blob, {
-          contentType,
-        });
+        .from(bucket)
+        .upload(path, blob, { contentType });
 
       if (uploadError) {
         console.error("Upload failed:", uploadError.message);
-        setError("ছবি আপলোড হলো না। আবার চেষ্টা করো (JPEG/PNG/WebP)।");
+        setError("ছবি আপলোড হলো না। আবার চেষ্টা করো।");
         return;
       }
 
       const { data: urlData } = supabase.storage
-        .from(BUCKET)
+        .from(bucket)
         .getPublicUrl(path);
 
       setPreview(urlData.publicUrl);

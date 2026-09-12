@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 import { COUNTRIES } from "@/utils/countries";
+import ImageUploader from "@/components/ImageUploader";
 
 export type ProfileInitial = {
   id: string;
   full_name: string | null;
+  avatar_url: string | null;
   department_id: string | null;
   graduation_year: number | null;
   status: string | null;
@@ -21,13 +22,13 @@ export type ProfileInitial = {
   bio: string | null;
 };
 
-// Validation — bhul holei Bengali message
 const profileSchema = z.object({
   full_name: z
     .string()
     .trim()
     .min(2, { message: "নাম অন্তত ২ অক্ষরের হতে হবে" })
     .max(100, { message: "নাম খুব বড় হয়ে গেছে" }),
+  avatar_url: z.string().nullable(),
   department_id: z.string().nullable(),
   status: z.enum(["alumnus", "current_student"]),
   graduation_year: z
@@ -67,10 +68,19 @@ export default function ProfileEditForm({
   const inputClass =
     "mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-sau focus:outline-none";
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    initial?.avatar_url ?? null
+  );
+    // Sesh bar SAVE-kora chhilo je avatar — cleanup er
+  // hishab eta diye (initial 2nd save-e stale hoye jay)
+  const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | null>(
+    initial?.avatar_url ?? null
+  );
   const [form, setForm] = useState({
     full_name: initial?.full_name ?? "",
     department_id: initial?.department_id ?? "",
-    status: initial?.status === "current_student" ? "current_student" : "alumnus",
+    status:
+      initial?.status === "current_student" ? "current_student" : "alumnus",
     graduation_year: initial?.graduation_year?.toString() ?? "",
     current_country: initial?.current_country ?? "Bangladesh",
     current_designation: initial?.current_designation ?? "",
@@ -89,12 +99,31 @@ export default function ProfileEditForm({
     setSuccess(false);
   }
 
+    // Purono avatar file Storage theke muchhe dey
+  async function deleteOldAvatar(
+    supabase: ReturnType<typeof createClient>,
+    url: string
+  ) {
+    const marker = "/avatars/";
+    const idx = url.indexOf(marker);
+    if (idx === -1) return { error: null };
+
+    const oldPath = url.slice(idx + marker.length);
+    if (!oldPath) return { error: null };
+
+    const { error } = await supabase.storage
+      .from("avatars")
+      .remove([oldPath]);
+    return { error: error ? error.message : null };
+  }
+
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
     const result = profileSchema.safeParse({
       full_name: form.full_name,
+      avatar_url: avatarUrl,
       department_id: form.department_id || null,
       status: form.status,
       graduation_year: form.graduation_year
@@ -117,26 +146,85 @@ export default function ProfileEditForm({
     setLoading(true);
     try {
       const supabase = createClient();
-
-      // Row thakle UPDATE, na thakle INSERT — dui-i
-      // khetre RLS malik-ke allow kore. Role/is_verified
-      // ei form-e nei — oi dorja admin-only
       const { error: saveError } = await supabase
         .from("profiles")
         .upsert({ id: userId, ...result.data });
+
       if (saveError) {
         console.error("Profile save failed:", saveError.message);
         setError("সেভ করতে সমস্যা হলো। একটু পরে আবার চেষ্টা করো।");
         return;
       }
+
+      // CLEANUP: ager SAVE-kora avatar ar use hocche na —
+      // Storage theke-o muchhe de. Ekhon error dhore dekhai
+      const { error: removeError } =
+        savedAvatarUrl && savedAvatarUrl !== avatarUrl
+          ? await deleteOldAvatar(supabase, savedAvatarUrl)
+          : { error: null };
+
+      if (removeError) {
+        console.error("Avatar cleanup failed:", removeError);
+      }
+
+      setSavedAvatarUrl(avatarUrl);
       setSuccess(true);
     } finally {
       setLoading(false);
     }
   }
 
+  const avatarInitials =
+    form.full_name
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?";
+
   return (
+    
     <form onSubmit={handleSave} className="mt-8 space-y-5">
+      {/* প্রোফাইল ছবি */}
+      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
+        <h2 className="text-sm font-medium text-ink/60">প্রোফাইল ছবি</h2>
+        <div className="mt-3 flex flex-wrap items-center gap-5">
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="h-20 w-20 rounded-full border-2 border-sau object-cover"
+            />
+          ) : (
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-sau text-2xl font-bold text-white">
+              {avatarInitials}
+            </div>
+          )}
+          <div>
+            <ImageUploader
+              bucket="avatars"
+              maxSide={400}
+              square
+              onUploaded={(img) => setAvatarUrl(img.publicUrl)}
+            />
+            {avatarUrl && (
+              <button
+                type="button"
+                onClick={() => setAvatarUrl(null)}
+                className="mt-2 text-xs text-red-600 hover:underline"
+              >
+                ✕ ছবি সরাও (সেভ করলে Storage থেকেও মুছে যাবে)
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-ink/50">
+          গোলাকারে দেখাতে square করে কেটে সেভ হয় (WebP)।
+        </p>
+      </div>
+
       <div>
         <label htmlFor="full_name" className="block text-sm font-medium">
           পুরো নাম <span className="text-ink/40">(ইংরেজিতে লিখবে)</span>
@@ -200,10 +288,7 @@ export default function ProfileEditForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label
-            htmlFor="graduation_year"
-            className="block text-sm font-medium"
-          >
+          <label htmlFor="graduation_year" className="block text-sm font-medium">
             ব্যাচের বছর
             <span className="block text-xs font-normal text-ink/40">
               (শিক্ষার্থী হলে সম্ভাব্য শেষের বছর)
@@ -366,12 +451,6 @@ export default function ProfileEditForm({
         >
           {loading ? "সেভ হচ্ছে..." : "সেভ করুন"}
         </button>
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-ink/60 hover:text-ink"
-        >
-          ড্যাশবোর্ডে ফিরুন
-        </Link>
       </div>
     </form>
   );

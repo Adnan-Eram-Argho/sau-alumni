@@ -69,7 +69,7 @@ export default async function DirectoryPage({
     let query = supabase
       .from("profiles")
       .select(
-        `id, full_name, graduation_year, status, current_designation, current_company,
+        `id, full_name, avatar_url, graduation_year, status, current_designation, current_company,
          current_country, higher_study_institution, higher_study_program, is_verified,
          created_at, departments(name, faculties(name))`
       )
