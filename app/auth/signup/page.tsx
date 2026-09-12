@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 
-// Form-er validation rules — bhul hole Bengali message
 const signupSchema = z.object({
   fullName: z
     .string()
@@ -42,8 +41,6 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
-      // Email confirm OFF — tai signup-er sathe sathe-i
-      // account toiri + auto login hoye jay
       const { data, error: signupError } = await supabase.auth.signUp({
         email: result.data.email,
         password: result.data.password,
@@ -66,9 +63,8 @@ export default function SignupPage() {
         return;
       }
 
-      // Ekhn login obosthay — nijer profile row toiri kori.
-      // (RLS allow korbe — karon ei user-e login kora)
       if (data.user) {
+        // Profile row
         const { error: insertError } = await supabase
           .from("profiles")
           .insert({
@@ -76,14 +72,24 @@ export default function SignupPage() {
             full_name: result.data.fullName,
           });
 
-        // Rare somossa hole-o home-e pathai — Phase 4-er
-        // "complete profile" guard missing row thik kore debe
         if (insertError) {
           console.error("Profile insert failed:", insertError.message);
         }
+
+        // Contact-ghor: email boshai deya (phone user pore
+        // nijer iccha moto add korbe, default private)
+        const { error: contactError } = await supabase
+          .from("profile_contacts")
+          .insert({
+            profile_id: data.user.id,
+            email: result.data.email,
+          });
+
+        if (contactError) {
+          console.error("Contact insert failed:", contactError.message);
+        }
       }
 
-      // Auto-login complete — direct home-e
       router.push("/");
       router.refresh();
     } finally {
