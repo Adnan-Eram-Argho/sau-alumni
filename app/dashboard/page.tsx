@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import VerificationRequestCard from "@/components/VerificationRequestCard";
 
 export const metadata = {
   title: "ড্যাশবোর্ড — SAU Alumni",
@@ -9,7 +10,6 @@ export const metadata = {
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Middleware-e talar ache — eta 2nd-layer rokko
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -17,7 +17,6 @@ export default async function DashboardPage() {
     redirect("/auth/login?next=/dashboard");
   }
 
-  // Section 31-er guard: login ache kintu profile row nei?
   const { data } = await supabase
     .from("profiles")
     .select(
@@ -36,6 +35,16 @@ export default async function DashboardPage() {
     current_country: string | null;
     graduation_year: number | null;
   } | null;
+
+  // Nijer verify-onurodher sesh obostha
+  const { data: vr } = await supabase
+    .from("verification_requests")
+    .select("status")
+    .eq("profile_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  const hasPendingRequest = vr?.[0]?.status === "pending";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
@@ -101,15 +110,13 @@ export default async function DashboardPage() {
               >
                 👀 নিজের পেজ দেখুন (যেমন অন্যরা দেখে)
               </Link>
-                            <Link
+              <Link
                 href="/dashboard/contact"
                 className="block rounded-xl border border-line px-4 py-2.5 font-medium hover:bg-base"
               >
                 🔐 যোগাযোগ ও গোপনীয়তা
-
-                
               </Link>
-                            {(profile.role === "admin" || profile.role === "super_admin") && (
+              {(profile.role === "admin" || profile.role === "super_admin") && (
                 <Link
                   href="/admin"
                   className="block rounded-xl border border-line px-4 py-2.5 font-medium hover:bg-base"
@@ -120,6 +127,14 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {profile && (
+        <VerificationRequestCard
+          userId={user.id}
+          isVerified={!!profile.is_verified}
+          hasPendingRequest={hasPendingRequest}
+        />
       )}
 
       <div className="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">

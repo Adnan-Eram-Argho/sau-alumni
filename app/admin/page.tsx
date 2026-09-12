@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/utils/admin";
 import AdminMemberList from "@/components/AdminMemberList";
@@ -7,8 +8,6 @@ export const metadata = {
 };
 
 export default async function AdminPage() {
-  // Admin na? Dhuktei parbe na (super_admin o 403 —
-  // login-chara o na, karon middleware talabondho)
   const check = await requireAdmin();
   if (!check.ok) {
     redirect("/dashboard");
@@ -16,12 +15,9 @@ export default async function AdminPage() {
 
   const { adminClient, actorRole } = check;
 
-  // SOB member — private/suspended soho (service-role)
   const { data: members } = await adminClient
     .from("profiles")
-    .select(
-      "id, full_name, role, is_permanent, is_verified, deleted_at, created_at"
-    )
+    .select("id, full_name, role, is_permanent, is_verified, deleted_at, created_at")
     .order("created_at", { ascending: false });
 
   const { data: contacts } = await adminClient
@@ -50,6 +46,13 @@ export default async function AdminPage() {
       <p className="mt-1 text-ink/60">
         মোট {list.length} জন সদস্য — প্রতিটা কাজ audit log-e লেখা হচ্ছে।
       </p>
+
+      <Link
+        href="/admin/queues"
+        className="mt-3 inline-block text-sm font-medium text-sau hover:underline dark:text-emerald-300"
+      >
+        📋 অনুরোধ ও অভিযোগ queue →
+      </Link>
 
       <AdminMemberList members={list} actorRole={actorRole} />
     </div>
