@@ -18,7 +18,6 @@ export default async function ProfileEditPage() {
     redirect("/auth/login?next=/dashboard/profile");
   }
 
-  // Ekhon-je profile row (na thakle form notun kore banabe)
   const { data } = await supabase
     .from("profiles")
     .select(
@@ -35,6 +34,15 @@ export default async function ProfileEditPage() {
     .select("id, name, faculties(name)")
     .order("name");
 
+  // as unknown as — supabase-r type-inference embed (faculties)
+  // ke array dhoray, runtime-e asole single object ashe.
+  // Directory page-e jei trick chhilo sei-i.
+  const deptList = (departments ?? []) as unknown as {
+    id: string;
+    name: string;
+    faculties: { name: string } | null;
+  }[];
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <h1 className="text-2xl font-bold sm:text-3xl">প্রোফাইল এডিট</h1>
@@ -45,7 +53,7 @@ export default async function ProfileEditPage() {
       <ProfileEditForm
         userId={user.id}
         initial={data as ProfileInitial | null}
-        departments={(departments ?? []).map((d) => ({
+        departments={deptList.map((d) => ({
           id: d.id,
           name: d.name,
           facultyName: d.faculties?.name ?? null,
