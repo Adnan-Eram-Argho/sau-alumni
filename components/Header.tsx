@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
+import NoticeBell from "@/components/NoticeBell";
 
-// Sob page-er upore — nav + login obostha + theme toggle
 export default function Header() {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,7 +37,6 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-bold">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-sm font-black text-white">
             SAU
@@ -45,77 +44,76 @@ export default function Header() {
           <span className="text-sau dark:text-emerald-300">SAU Alumni</span>
         </Link>
 
-        {/* Desktop: nav + auth + theme */}
-        <div className="hidden items-center gap-2 sm:flex">
-          <Link
-            href="/directory"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
-          >
-            ডিরেক্টরি
-          </Link>
-          <Link
-            href="/notices"
-            className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
-          >
-            নোটিশ
-          </Link>
-          {email && (
+        {/* Right: [desktop nav+auth] [bell] [theme] [mobile ☰] */}
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-2 sm:flex">
             <Link
-              href="/dashboard"
+              href="/directory"
               className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
             >
-              ড্যাশবোর্ড
+              ডিরেক্টরি
             </Link>
-          )}
-
-          {loading ? (
-            <div className="h-8 w-24 animate-pulse rounded bg-base" />
-          ) : email ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="hidden max-w-40 truncate text-ink/70 md:block">
-                {email}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
-              >
-                লগআউট
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/notices"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
+            >
+              নোটিশ
+            </Link>
+            {email && (
               <Link
-                href="/auth/login"
-                className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+                href="/dashboard"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
               >
-                লগইন
+                ড্যাশবোর্ড
               </Link>
-              <Link
-                href="/auth/signup"
-                className="rounded-lg bg-sau px-3 py-1.5 font-medium text-white hover:bg-sau-hover"
-              >
-                সাইন আপ
-              </Link>
-            </div>
-          )}
+            )}
 
-          <ThemeToggle />
-        </div>
+            {loading ? (
+              <div className="h-8 w-24 animate-pulse rounded bg-base" />
+            ) : email ? (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="hidden max-w-40 truncate text-ink/70 md:block">
+                  {email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+                >
+                  লগআউট
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm">
+                <Link
+                  href="/auth/login"
+                  className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+                >
+                  লগইন
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="rounded-lg bg-sau px-3 py-1.5 font-medium text-white hover:bg-sau-hover"
+                >
+                  সাইন আপ
+                </Link>
+              </div>
+            )}
+          </div>
 
-        {/* Mobile: theme + menu button */}
-        <div className="flex items-center gap-2 sm:hidden">
+          {/* Ek-i bell — sob screen-e visible */}
+          <NoticeBell />
           <ThemeToggle />
+
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="মেনু"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-lg"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-lg sm:hidden"
           >
             {menuOpen ? "✕" : "☰"}
           </button>
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
       {menuOpen && (
         <nav className="border-t border-line sm:hidden">
           <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 text-sm">

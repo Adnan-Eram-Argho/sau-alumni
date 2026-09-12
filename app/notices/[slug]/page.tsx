@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { createClient } from "@/utils/supabase/server";
+import MarkNoticeRead from "@/components/MarkNoticeRead";
 
 type NoticeData = {
   id: string;
@@ -19,7 +20,6 @@ type NoticeData = {
   profiles: { full_name: string } | null;
 };
 
-// Prottek notice-r nijasro title/description (SEO)
 export async function generateMetadata({
   params,
 }: {
@@ -39,8 +39,10 @@ export async function generateMetadata({
   }
 
   const description =
-    (data.content ?? "").replace(/[#*`[\]]/g, " ").slice(0, 150).trim() ||
-    "SAU Alumni notice.";
+    (data.content ?? "")
+      .replace(/[#*`[\]]/g, " ")
+      .slice(0, 150)
+      .trim() || "SAU Alumni notice.";
 
   return {
     title: `${data.title} — SAU Alumni`,
@@ -69,7 +71,6 @@ export default async function NoticeDetailPage({
 
   const notice = data as NoticeData | null;
 
-  // RLS: shudhu published (ba nijer row) ashe — na thakle 404
   if (!notice) {
     notFound();
   }
@@ -78,6 +79,9 @@ export default async function NoticeDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      {/* Pora hoye gelo — mark (khali published hole) */}
+      {!isPreview && <MarkNoticeRead noticeId={notice.id} />}
+
       <Link
         href="/notices"
         className="text-sm font-medium text-ink/60 hover:text-ink"
@@ -117,7 +121,6 @@ export default async function NoticeDetailPage({
           />
         )}
 
-        {/* Markdown — sanitizer diye render (raw HTML jay na) */}
         <div className="mt-6 space-y-3 text-ink/85 [&_a]:text-sau dark:[&_a]:text-emerald-300 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-line [&_blockquote]:pl-4 [&_blockquote]:italic [&_code]:rounded [&_code]:bg-base [&_code]:px-1.5 [&_code]:py-0.5 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_hr]:border-line [&_img]:rounded-xl [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-base [&_pre]:p-4 [&_ul]:list-disc [&_ul]:pl-6">
           <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
             {notice.content}
