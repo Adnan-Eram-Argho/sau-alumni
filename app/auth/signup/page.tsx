@@ -1,0 +1,174 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import Link from "next/link";
+import { z } from "zod";
+import { createClient } from "@/utils/supabase/client";
+
+// Form-er validation rules — bhul hole Bengali message
+const signupSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, { message: "নাম অন্তত ২ অক্ষরের হতে হবে" })
+    .max(100, { message: "নাম খুব বড় হয়ে গেছে" }),
+  email: z
+    .string()
+    .trim()
+    .email({ message: "সঠিক ইমেইল ঠিকানা দিন" }),
+  password: z
+    .string()
+    .min(10, { message: "পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে" })
+    .max(72, { message: "পাসওয়ার্ড ৭২ অক্ষরের মধ্যে রাখুন" }),
+});
+
+export default function SignupPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSignup(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    // Age nijer validation chalai
+    const result = signupSchema.safeParse({ fullName, email, password });
+    if (!result.success) {
+      setError(result.error.issues[0].message);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { error: signupError } = await supabase.auth.signUp({
+        email: result.data.email,
+        password: result.data.password,
+        options: {
+          // Signup form-er nam-ta user-er metadata-tey rokkho
+          // hoy — callback sei nam diyei profile row banabe
+          data: { full_name: result.data.fullName },
+          // Email link theke firey asar thikana
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (signupError) {
+        if (signupError.message.toLowerCase().includes("already")) {
+          setError("এই ইমেইল দিয়ে অ্যাকাউন্ট ইতিমধ্যে আছে। লগইন করুন।");
+        } else {
+          setError("কিছু একটা সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।");
+        }
+        return;
+      }
+      setSuccess(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (success) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-md">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl">
+            ✉️
+          </div>
+          <h1 className="text-xl font-bold">ইমেইল দেখুন!</h1>
+          <p className="mt-3 text-gray-600">
+            আপনার ইমেইলে একটি লিংক পাঠানো হয়েছে। সেই লিংকে ক্লিক করলেই
+            অ্যাকাউন্ট চালু হয়ে যাবে।
+          </p>
+          <p className="mt-2 text-sm text-gray-400">
+            (না পেলে স্প্যাম ফোল্ডারও একবার দেখুন)
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
+        <h1 className="text-2xl font-bold">নতুন অ্যাকাউন্ট খুলুন</h1>
+        <p className="mt-1 text-sm text-gray-500">SAU Alumni নেটওয়ার্কে যোগ দিন</p>
+
+        <form onSubmit={handleSignup} className="mt-6 space-y-4">
+          <div>
+            <label htmlFor="fullName" className="block text-sm font-medium">
+              পুরো নাম <span className="text-gray-400">(ইংরেজিতে লিখুন)</span>
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              autoComplete="name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="e.g. Adnan Eram Argho"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium">
+              ইমেইল
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium">
+              পাসওয়ার্ড
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="অন্তত ১০ অক্ষর"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              required
+            />
+            <p className="mt-1 text-xs text-gray-400">অন্তত ১০ অক্ষর দিন</p>
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-green-700 py-2.5 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+          >
+            {loading ? "অপেক্ষা করুন..." : "অ্যাকাউন্ট খুলুন"}
+          </button>
+        </form>
+
+        <p className="mt-4 text-center text-sm text-gray-500">
+          আগে থেকেই অ্যাকাউন্ট আছে?{" "}
+          <Link
+            href="/auth/login"
+            className="font-medium text-green-700 hover:underline"
+          >
+            লগইন করুন
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
