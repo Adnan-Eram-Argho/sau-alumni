@@ -41,6 +41,7 @@ export default function SignupPage() {
     try {
       const supabase = createClient();
 
+      // Email confirm OFF — sathe sathe account + auto login
       const { data, error: signupError } = await supabase.auth.signUp({
         email: result.data.email,
         password: result.data.password,
@@ -97,16 +98,19 @@ export default function SignupPage() {
     }
   }
 
+  const inputClass =
+    "mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 focus:border-sau focus:outline-none";
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-md">
+    <main className="flex min-h-[70vh] items-center justify-center bg-base p-6">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-8 shadow-md">
         <h1 className="text-2xl font-bold">নতুন অ্যাকাউন্ট খুলুন</h1>
-        <p className="mt-1 text-sm text-gray-500">SAU Alumni নেটওয়ার্কে যোগ দিন</p>
+        <p className="mt-1 text-sm text-ink/60">SAU Alumni নেটওয়ার্কে যোগ দিন</p>
 
         <form onSubmit={handleSignup} className="mt-6 space-y-4">
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium">
-              পুরো নাম <span className="text-gray-400">(ইংরেজিতে লিখুন)</span>
+              পুরো নাম <span className="text-ink/40">(ইংরেজিতে লিখুন)</span>
             </label>
             <input
               id="fullName"
@@ -115,7 +119,7 @@ export default function SignupPage() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Adnan Eram Argho"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              className={inputClass}
               required
             />
           </div>
@@ -131,7 +135,7 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              className={inputClass}
               required
             />
           </div>
@@ -147,30 +151,32 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="অন্তত ১০ অক্ষর"
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-green-600 focus:outline-none"
+              className={inputClass}
               required
             />
-            <p className="mt-1 text-xs text-gray-400">অন্তত ১০ অক্ষর দিন</p>
+            <p className="mt-1 text-xs text-ink/50">অন্তত ১০ অক্ষর দিন</p>
           </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+              {error}
+            </p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-green-700 py-2.5 font-semibold text-white hover:bg-green-800 disabled:opacity-50"
+            className="w-full rounded-lg bg-sau py-2.5 font-semibold text-white hover:bg-sau-hover disabled:opacity-50"
           >
             {loading ? "অপেক্ষা করুন..." : "অ্যাকাউন্ট খুলুন"}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-ink/60">
           আগে থেকেই অ্যাকাউন্ট আছে?{" "}
           <Link
             href="/auth/login"
-            className="font-medium text-green-700 hover:underline"
+            className="font-medium text-sau hover:underline dark:text-emerald-300"
           >
             লগইন করুন
           </Link>

@@ -53,12 +53,7 @@ export default function Header() {
             >
               ডিরেক্টরি
             </Link>
-            <Link
-              href="/notices"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
-            >
-              নোটিশ
-            </Link>
+
             {email && (
               <Link
                 href="/dashboard"

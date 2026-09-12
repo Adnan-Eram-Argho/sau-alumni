@@ -73,8 +73,7 @@ export default function NoticeBell() {
     };
   }, []);
 
-  if (unread === null) return null;
-
+  // Login na korle bell thakbe (badge chara) — public board-r rasta
   return (
     <Link
       href="/notices"
@@ -83,7 +82,7 @@ export default function NoticeBell() {
       className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line text-lg hover:bg-base"
     >
       🔔
-      {unread > 0 && (
+      {unread !== null && unread > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
           {unread > 9 ? "9+" : unread}
         </span>
