@@ -93,7 +93,7 @@ export default async function ProfilePage({
     .eq("id", id)
     .maybeSingle();
 
-  const p = data as ProfileData | null;
+    const p = data as unknown as ProfileData | null;
 
   // RLS er karone onno karo PRIVATE profile ekhene ashbei na —
   // privacy database-i rokko kore. Na pele 404.

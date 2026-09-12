@@ -106,7 +106,7 @@ export default async function DirectoryPage({
     }
 
     const res = await query;
-    profiles = (res.data ?? []) as DirectoryProfile[];
+    profiles = (res.data ?? []) as unknown as DirectoryProfile[];
     queryError = res.error ? res.error.message : null;
 
     // Na pele ba error: partial-name fallback — "argh"
@@ -117,7 +117,7 @@ export default async function DirectoryPage({
         const res2 = await baseQuery().or(
           `full_name.ilike.%${likeTerm}%,current_company.ilike.%${likeTerm}%,current_designation.ilike.%${likeTerm}%`
         );
-        profiles = (res2.data ?? []) as DirectoryProfile[];
+         profiles = (res2.data ?? []) as unknown as DirectoryProfile[];
         queryError = res2.error ? res2.error.message : null;
       }
     }
