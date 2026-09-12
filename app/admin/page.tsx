@@ -17,7 +17,9 @@ export default async function AdminPage() {
 
   const { data: members } = await adminClient
     .from("profiles")
-    .select("id, full_name, role, is_permanent, is_verified, deleted_at, created_at")
+    .select(
+      "id, full_name, role, is_permanent, is_verified, deleted_at, created_at"
+    )
     .order("created_at", { ascending: false });
 
   const { data: contacts } = await adminClient

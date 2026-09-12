@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/utils/supabase/server";
 
-// Google-er jonno "amar site-e ei ei page ache" — list
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://sau-alumni.vercel.app";
 
   const entries: MetadataRoute.Sitemap = [
     { url: base, changeFrequency: "daily", priority: 1 },
     { url: `${base}/directory`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${base}/notices`, changeFrequency: "daily", priority: 0.7 },
     { url: `${base}/about`, changeFrequency: "monthly", priority: 0.5 },
   ];
 
@@ -25,7 +25,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   });
 
-  // Profile pages — SHUDHU public gulai (privacy-first, spec Section 6)
+  // Published notices
+  const { data: notices } = await supabase
+    .from("notices")
+    .select("slug")
+    .eq("status", "published");
+  (notices ?? []).forEach((n) => {
+    entries.push({
+      url: `${base}/notices/${n.slug}`,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    });
+  });
+
+  // Profile pages — SHUDHU public gulai (privacy-first, spec)
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id")

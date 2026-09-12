@@ -123,7 +123,18 @@ export default async function DashboardPage() {
                 >
                   🛡️ অ্যাডমিন প্যানেল
                 </Link>
-              )}
+
+                )}
+                                {(profile.role === "contributor" ||
+                    profile.role === "admin" ||
+                    profile.role === "super_admin") && (
+                    <Link
+                    href="/dashboard/notices"
+                    className="block rounded-xl border border-line px-4 py-2.5 font-medium hover:bg-base"
+                    >
+                    📢 আমার নোটিশ
+                    </Link>
+                )}
             </div>
           </div>
         </div>

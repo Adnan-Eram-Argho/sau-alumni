@@ -15,10 +15,53 @@ export default async function AdminQueuesPage() {
 
   const { adminClient, actorId, actorRole } = check;
 
-  // Pending verification requests — naam soho.
-  // NOTE: ei table-e profiles-er DUITA FK (profile_id, reviewed_by) —
-  // tai PostgREST-ke sposto bole dite hoy kon FK diye embed:
-  // profiles!verification_requests_profile_id_fkey(...)
+  // Notice drafts — contributor-der khosra.
+  // NOTE: notices-profiles DUITA path (author_id + notice_reads) —
+  // tai fkey-naam bole deya lagbe
+  const { data: drafts, error: draftsError } = await adminClient
+    .from("notices")
+    .select(
+      "id, title, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
+    )
+    .eq("status", "draft")
+    .order("created_at", { ascending: false });
+
+  if (draftsError) {
+    console.error("Notices drafts query failed:", draftsError.message);
+  }
+
+  const draftList = (drafts ?? []) as unknown as {
+    id: string;
+    title: string;
+    pinned: boolean | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
+
+  // Published + archived — pin/archive manage korte
+  const { data: notices, error: noticesError } = await adminClient
+    .from("notices")
+    .select(
+      "id, title, status, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
+    )
+    .in("status", ["published", "archived"])
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (noticesError) {
+    console.error("Notices query failed:", noticesError.message);
+  }
+
+  const noticeList = (notices ?? []) as unknown as {
+    id: string;
+    title: string;
+    status: string;
+    pinned: boolean | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
+
+  // Pending verification requests
   const { data: vrs, error: vrsError } = await adminClient
     .from("verification_requests")
     .select(
@@ -38,7 +81,7 @@ export default async function AdminQueuesPage() {
     profiles: { full_name: string } | null;
   }[];
 
-  // Pending reports — ekta FK (reporter_id), tai ambiguity nai
+  // Pending reports
   const { data: reports, error: reportsError } = await adminClient
     .from("reports")
     .select("id, target_table, reason, created_at, profiles(full_name)")
@@ -93,6 +136,20 @@ export default async function AdminQueuesPage() {
       <h1 className="mt-3 text-2xl font-bold sm:text-3xl">অনুরোধ ও অভিযোগ</h1>
 
       <AdminQueues
+        draftNotices={draftList.map((n) => ({
+          id: n.id,
+          title: n.title,
+          authorName: n.profiles?.full_name ?? "—",
+          date: n.created_at?.slice(0, 10) ?? "",
+        }))}
+        notices={noticeList.map((n) => ({
+          id: n.id,
+          title: n.title,
+          authorName: n.profiles?.full_name ?? "—",
+          status: n.status,
+          pinned: !!n.pinned,
+          date: n.created_at?.slice(0, 10) ?? "",
+        }))}
         verificationRequests={vrList.map((v) => ({
           id: v.id,
           fullName: v.profiles?.full_name ?? "—",

@@ -16,6 +16,11 @@ const actionSchema = z.object({
     "reject_verification",
     "review_report",
     "dismiss_report",
+    "publish_notice",
+    "unpublish_notice",
+    "pin_notice",
+    "archive_notice",
+    "unarchive_notice",
   ]),
   target_id: z.string().uuid(),
   value: z.boolean().optional(),
@@ -74,6 +79,68 @@ export async function POST(request: Request) {
   }
   const { action, target_id, value } = parsed.data;
 
+  // ---------- Notice management (publish/pin/archive) ----------
+  if (
+    action === "publish_notice" ||
+    action === "unpublish_notice" ||
+    action === "pin_notice" ||
+    action === "archive_notice" ||
+    action === "unarchive_notice"
+  ) {
+    const { data: notice } = await adminClient
+      .from("notices")
+      .select("id, status, pinned")
+      .eq("id", target_id)
+      .maybeSingle();
+
+    if (!notice) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    let update: Record<string, unknown> | null = null;
+
+    if (action === "publish_notice") {
+      if (notice.status !== "draft") {
+        return NextResponse.json({ error: "not_draft" }, { status: 400 });
+      }
+      update = { status: "published", publish_at: new Date().toISOString() };
+    } else if (action === "unpublish_notice") {
+      if (notice.status !== "published") {
+        return NextResponse.json({ error: "not_published" }, { status: 400 });
+      }
+      update = { status: "draft", pinned: false };
+    } else if (action === "pin_notice") {
+      if (notice.status !== "published") {
+        return NextResponse.json({ error: "not_published" }, { status: 400 });
+      }
+      update = { pinned: value ?? !notice.pinned };
+    } else if (action === "archive_notice") {
+      if (notice.status !== "published") {
+        return NextResponse.json({ error: "not_published" }, { status: 400 });
+      }
+      update = { status: "archived", pinned: false };
+    } else {
+      // unarchive_notice
+      if (notice.status !== "archived") {
+        return NextResponse.json({ error: "not_archived" }, { status: 400 });
+      }
+      update = { status: "published" };
+    }
+
+    const { error: nError } = await adminClient
+      .from("notices")
+      .update(update)
+      .eq("id", target_id);
+
+    if (nError) {
+      console.error("Notice action failed:", nError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+
+    await writeAudit(adminClient, actorId, action, "notices", target_id, update);
+    return NextResponse.json({ ok: true });
+  }
+
   // ---------- Verification review ----------
   if (action === "approve_verification" || action === "reject_verification") {
     const { data: vr } = await adminClient
@@ -86,7 +153,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "not_pending" }, { status: 400 });
     }
 
-    // Je profile-r kotha — take chhura jay kina
     const touch = await getTouchableProfile(adminClient, vr.profile_id, actorRole);
     if (!touch.ok) {
       return NextResponse.json({ error: touch.error }, { status: touch.status });
@@ -147,7 +213,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  // ---------- Profile actions (ager moto-i) ----------
+  // ---------- Profile actions ----------
   const touch = await getTouchableProfile(adminClient, target_id, actorRole);
   if (!touch.ok) {
     return NextResponse.json({ error: touch.error }, { status: touch.status });

@@ -4,6 +4,12 @@ import path from "path";
 
 const isDev = process.env.NODE_ENV === "development";
 
+// Supabase-r host — public chobi er URL ekhan theke (env theke,
+// kono kichhu hardcode na)
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : null;
+
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 
@@ -21,7 +27,9 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "img-src 'self' data:",
+              // Supabase Storage-r public chobi
+              "img-src 'self' data:" +
+                (supabaseHost ? ` https://${supabaseHost}` : ""),
               "script-src 'self' 'unsafe-inline'" + (isDev ? " 'unsafe-eval'" : ""),
               "style-src 'self' 'unsafe-inline'",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co" +
@@ -34,11 +42,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-// PWA — service worker (build er somoy public/sw.js banay)
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
-  // dev-e off — shudhu production-e cholbe
   disable: isDev,
 });
 
