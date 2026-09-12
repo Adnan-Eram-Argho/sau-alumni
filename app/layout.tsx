@@ -12,11 +12,13 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  // Site-er asol thikana — share-card/canonical URL banate lage
   metadataBase: new URL("https://sau-alumni.vercel.app"),
   title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
   description:
     "Sher-e-Bangla Agricultural University-er alumni ar current student-der network — khunje nin shob batch-mate, desh-bidesh.",
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
