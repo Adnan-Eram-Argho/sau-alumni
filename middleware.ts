@@ -52,7 +52,10 @@ export async function middleware(request: NextRequest) {
   // ---- Member area talabondho ----
   // Login chara /dashboard-e dhukle login page-e pathiye dey —
   // ar "next" param-e bole dey login sesh e kothay fire jete
-  if (pathname.startsWith("/dashboard") && !user) {
+  if (
+    (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) &&
+    !user
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     url.search = "";

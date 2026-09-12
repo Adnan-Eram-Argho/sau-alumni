@@ -106,7 +106,17 @@ export default async function DashboardPage() {
                 className="block rounded-xl border border-line px-4 py-2.5 font-medium hover:bg-base"
               >
                 🔐 যোগাযোগ ও গোপনীয়তা
+
+                
               </Link>
+                            {(profile.role === "admin" || profile.role === "super_admin") && (
+                <Link
+                  href="/admin"
+                  className="block rounded-xl border border-line px-4 py-2.5 font-medium hover:bg-base"
+                >
+                  🛡️ অ্যাডমিন প্যানেল
+                </Link>
+              )}
             </div>
           </div>
         </div>
