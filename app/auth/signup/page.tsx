@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 
@@ -12,10 +13,7 @@ const signupSchema = z.object({
     .trim()
     .min(2, { message: "নাম অন্তত ২ অক্ষরের হতে হবে" })
     .max(100, { message: "নাম খুব বড় হয়ে গেছে" }),
-  email: z
-    .string()
-    .trim()
-    .email({ message: "সঠিক ইমেইল ঠিকানা দিন" }),
+  email: z.string().trim().email({ message: "সঠিক ইমেইল ঠিকানা দিন" }),
   password: z
     .string()
     .min(10, { message: "পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে" })
@@ -23,18 +21,17 @@ const signupSchema = z.object({
 });
 
 export default function SignupPage() {
+  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSignup(e: FormEvent) {
     e.preventDefault();
     setError(null);
 
-    // Age nijer validation chalai
     const result = signupSchema.safeParse({ fullName, email, password });
     if (!result.success) {
       setError(result.error.issues[0].message);
@@ -44,50 +41,54 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error: signupError } = await supabase.auth.signUp({
+
+      // Email confirm OFF — tai signup-er sathe sathe-i
+      // account toiri + auto login hoye jay
+      const { data, error: signupError } = await supabase.auth.signUp({
         email: result.data.email,
         password: result.data.password,
         options: {
-          // Signup form-er nam-ta user-er metadata-tey rokkho
-          // hoy — callback sei nam diyei profile row banabe
           data: { full_name: result.data.fullName },
-          // Email link theke firey asar thikana
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (signupError) {
-        if (signupError.message.toLowerCase().includes("already")) {
+        const msg = signupError.message.toLowerCase();
+        if (msg.includes("already")) {
           setError("এই ইমেইল দিয়ে অ্যাকাউন্ট ইতিমধ্যে আছে। লগইন করুন।");
+        } else if (msg.includes("password")) {
+          setError(
+            "পাসওয়ার্ডটি দুর্বল বা চুরি-হওয়া তালিকায় ধরা পড়েছে। একদম নতুন, এলোমেলা একটা পাসওয়ার্ড দিন।"
+          );
         } else {
           setError("কিছু একটা সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।");
         }
         return;
       }
-      setSuccess(true);
+
+      // Ekhn login obosthay — nijer profile row toiri kori.
+      // (RLS allow korbe — karon ei user-e login kora)
+      if (data.user) {
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            id: data.user.id,
+            full_name: result.data.fullName,
+          });
+
+        // Rare somossa hole-o home-e pathai — Phase 4-er
+        // "complete profile" guard missing row thik kore debe
+        if (insertError) {
+          console.error("Profile insert failed:", insertError.message);
+        }
+      }
+
+      // Auto-login complete — direct home-e
+      router.push("/");
+      router.refresh();
     } finally {
       setLoading(false);
     }
-  }
-
-  if (success) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 p-6">
-        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-md">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl">
-            ✉️
-          </div>
-          <h1 className="text-xl font-bold">ইমেইল দেখুন!</h1>
-          <p className="mt-3 text-gray-600">
-            আপনার ইমেইলে একটি লিংক পাঠানো হয়েছে। সেই লিংকে ক্লিক করলেই
-            অ্যাকাউন্ট চালু হয়ে যাবে।
-          </p>
-          <p className="mt-2 text-sm text-gray-400">
-            (না পেলে স্প্যাম ফোল্ডারও একবার দেখুন)
-          </p>
-        </div>
-      </main>
-    );
   }
 
   return (
