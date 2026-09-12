@@ -2,8 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { authPagesLimiter } from "@/utils/rate-limit";
 
-// Prottek request-e: (1) auth page-e rate limit check,
-// (2) Supabase login session fresh rakhe
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -12,7 +10,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/login") || pathname.startsWith("/auth/signup");
 
   if (isAuthPage && authPagesLimiter) {
-    // IP ber kori (Vercel-e "x-forwarded-for" header-e thake)
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const { success } = await authPagesLimiter.limit(ip);
     if (!success) {
@@ -47,9 +44,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // IMPORTANT: ei call-ta createServerClient er sathe sathe-i
-  // hoy — eta-i session refresh kore
-  await supabase.auth.getUser();
+  // IMPORTANT: createServerClient-er sathe sathe-i hoy
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // ---- Member area talabondho ----
+  // Login chara /dashboard-e dhukle login page-e pathiye dey —
+  // ar "next" param-e bole dey login sesh e kothay fire jete
+  if (pathname.startsWith("/dashboard") && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    url.search = "";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }

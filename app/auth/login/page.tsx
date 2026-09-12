@@ -44,8 +44,16 @@ export default function LoginPage() {
         return;
       }
 
-      // Home-e pathiye dei
-      router.push("/");
+      // "next" address chhilo? (jemon /dashboard theke eshechi) —
+      // login sesh e sekhane-i pathiye dey. Safe-check soho:
+      // nijer site-er vitorer path chara kothao na
+      const params = new URLSearchParams(window.location.search);
+      const nextParam = params.get("next") ?? "/";
+      const safeNext =
+        nextParam.startsWith("/") && !nextParam.startsWith("//")
+          ? nextParam
+          : "/";
+      router.push(safeNext);
       router.refresh();
     } finally {
       setLoading(false);
