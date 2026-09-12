@@ -21,6 +21,7 @@ const actionSchema = z.object({
     "pin_notice",
     "archive_notice",
     "unarchive_notice",
+    "delete_notice",
   ]),
   target_id: z.string().uuid(),
   value: z.boolean().optional(),
@@ -140,6 +141,36 @@ export async function POST(request: Request) {
     await writeAudit(adminClient, actorId, action, "notices", target_id, update);
     return NextResponse.json({ ok: true });
   }
+
+    // ---------- Notice delete (shudhu DRAFT) ----------
+  if (action === "delete_notice") {
+    const { data: notice } = await adminClient
+      .from("notices")
+      .select("id, status")
+      .eq("id", target_id)
+      .maybeSingle();
+
+    if (!notice) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+    if (notice.status !== "draft") {
+      return NextResponse.json({ error: "only_draft" }, { status: 400 });
+    }
+
+    const { error: delError } = await adminClient
+      .from("notices")
+      .delete()
+      .eq("id", target_id);
+
+    if (delError) {
+      console.error("Notice delete failed:", delError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+
+    await writeAudit(adminClient, actorId, action, "notices", target_id);
+    return NextResponse.json({ ok: true });
+  }
+
 
   // ---------- Verification review ----------
   if (action === "approve_verification" || action === "reject_verification") {

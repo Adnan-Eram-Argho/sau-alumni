@@ -109,13 +109,26 @@ export default function AdminQueues({
                 <p className="mt-0.5 text-xs text-ink/50">
                   {n.authorName} · {n.date}
                 </p>
-                <button
-                  onClick={() => act("publish_notice", n.id)}
-                  disabled={busy}
-                  className="mt-3 rounded-lg bg-sau px-4 py-1.5 text-sm font-medium text-white hover:bg-sau-hover disabled:opacity-50"
-                >
-                  🚀 প্রকাশ করুন
-                </button>
+                <div className="mt-3 flex gap-2 text-sm">
+                  <button
+                    onClick={() => act("publish_notice", n.id)}
+                    disabled={busy}
+                    className="rounded-lg bg-sau px-4 py-1.5 font-medium text-white hover:bg-sau-hover disabled:opacity-50"
+                  >
+                    🚀 প্রকাশ করুন
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm("নিশ্চিত? খসড়াটা চিরতরে মুছে যাবে।")) {
+                        act("delete_notice", n.id);
+                      }
+                    }}
+                    disabled={busy}
+                    className="rounded-lg border border-red-300 px-3 py-1.5 font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+                  >
+                    🗑️ মুছে ফেলো
+                  </button>
+                </div>
               </div>
             ))}
           </div>

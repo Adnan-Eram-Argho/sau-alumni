@@ -7,9 +7,8 @@ export type UploadedImage = { path: string; publicUrl: string };
 
 const BUCKET = "notice-images";
 
-// Chobi barle: 1) canvas-e resize (max 1200px) — ei re-encode
-// EXIF (GPS-location) muchhe dey (spec), 2) nijer login-JWT
-// diye sora Supabase Storage-te upload (RLS rakshe)
+// Chobi barle: 1) resize (max 1200px) — EXIF/GPS muchhe dey,
+// 2) WEBP-e convert (space bachai!), 3) sora Storage-te upload
 export default function ImageUploader({
   onUploaded,
 }: {
@@ -41,9 +40,19 @@ export default function ImageUploader({
       if (!ctx) throw new Error("canvas");
       ctx.drawImage(bitmap, 0, 0, width, height);
 
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.85)
+      // Prio WEBP — ~25-35% chhoto file. Browser na parle
+      // toBlob nijei PNG-e neme jay — sei khetre JPEG fallback
+      let blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/webp", 0.85)
       );
+      let contentType = "image/webp";
+
+      if (!blob || blob.type !== "image/webp") {
+        blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.85)
+        );
+        contentType = "image/jpeg";
+      }
       if (!blob) throw new Error("blob");
 
       const supabase = createClient();
@@ -52,14 +61,15 @@ export default function ImageUploader({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("unauthorized");
 
+      const ext = contentType === "image/webp" ? "webp" : "jpg";
       const path = `${user.id}/${Date.now()}-${Math.random()
         .toString(36)
-        .slice(2, 10)}.jpg`;
+        .slice(2, 10)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, blob, {
-          contentType: "image/jpeg",
+          contentType,
         });
 
       if (uploadError) {
