@@ -28,18 +28,15 @@ export default async function ProfileEditPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  // Department list — faculty-r naam soho (database theke)
   const { data: departments } = await supabase
     .from("departments")
     .select("id, name, faculties(name)")
     .order("name");
 
-  // as unknown as — supabase-r type-inference embed (faculties)
-  // ke array dhoray, runtime-e asole single object ashe.
-  // Directory page-e jei trick chhilo sei-i.
   const deptList = (departments ?? []) as unknown as {
     id: string;
     name: string;
+    faculty_id: string | null;
     faculties: { name: string } | null;
   }[];
 
@@ -56,6 +53,7 @@ export default async function ProfileEditPage() {
         departments={deptList.map((d) => ({
           id: d.id,
           name: d.name,
+          facultyId: d.faculty_id,
           facultyName: d.faculties?.name ?? null,
         }))}
       />

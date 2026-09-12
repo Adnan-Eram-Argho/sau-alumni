@@ -27,6 +27,29 @@ export type NoticeInitial = {
   department_id: string | null;
 };
 
+// Purono chobi Storage theke muchhe dey — server-route
+// (service-role) diye: guaranteed, RLS-e atkabe na
+async function deleteOldImage(url: string) {
+  try {
+    const res = await fetch("/api/delete-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error(
+        "Notice image cleanup failed:",
+        data.error ?? res.status,
+        "|",
+        url
+      );
+    }
+  } catch (e) {
+    console.error("Notice image cleanup failed:", e);
+  }
+}
+
 export default function NoticeForm({
   userId,
   faculties,
@@ -51,6 +74,10 @@ export default function NoticeForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
   const [imageUrl, setImageUrl] = useState<string | null>(
+    initial?.image_url ?? null
+  );
+  // Sesh bar SAVE-kora chhilo je chobi — cleanup er hishab
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(
     initial?.image_url ?? null
   );
   const [facultyId, setFacultyId] = useState(initial?.faculty_id ?? "");
@@ -142,6 +169,13 @@ export default function NoticeForm({
         }
       }
 
+      // CLEANUP: ager SAVE-kora chobi ar use hocche na —
+      // Storage theke muchhe de (server-route, guaranteed)
+      if (savedImageUrl && savedImageUrl !== imageUrl) {
+        await deleteOldImage(savedImageUrl);
+      }
+      setSavedImageUrl(imageUrl);
+
       router.push("/dashboard/notices");
       router.refresh();
     } finally {
@@ -199,7 +233,7 @@ export default function NoticeForm({
               onClick={() => setImageUrl(null)}
               className="mt-1 text-xs text-red-600 hover:underline"
             >
-              ✕ ছবি সরাও
+              ✕ ছবি সরাও (সেভ করলে Storage থেকেও মুছে যাবে)
             </button>
           </div>
         )}

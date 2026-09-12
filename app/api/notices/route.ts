@@ -16,12 +16,15 @@ const updateSchema = z.object({
   department_id: z.string().nullable(),
 });
 
-// Nijer DRAFT-i edit/delete kora jay — server-e
-// jachai (spec: notice update service-route diye)
-async function getOwnDraft(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
+// Nijer DRAFT-i edit/delete kora jay
+async function getOwnDraft(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+  userId: string
+) {
   const { data: notice } = await supabase
     .from("notices")
-    .select("id, author_id, status")
+    .select("id, author_id, status, image_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -102,6 +105,23 @@ export async function DELETE(request: Request) {
   if (error) {
     console.error("Notice delete failed:", error.message);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
+  }
+
+  // Chobi chhilo? Storage theke-o muchhi (etim file rakhbo na)
+  if (own.image_url) {
+    const marker = "/object/public/notice-images/";
+    const idx = own.image_url.indexOf(marker);
+    if (idx !== -1) {
+      const imgPath = own.image_url.slice(idx + marker.length);
+      if (imgPath) {
+        const { error: imgError } = await service.storage
+          .from("notice-images")
+          .remove([imgPath]);
+        if (imgError) {
+          console.error("Notice image cleanup failed:", imgError.message);
+        }
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

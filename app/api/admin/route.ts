@@ -146,7 +146,7 @@ export async function POST(request: Request) {
   if (action === "delete_notice") {
     const { data: notice } = await adminClient
       .from("notices")
-      .select("id, status")
+      .select("id, status, image_url")
       .eq("id", target_id)
       .maybeSingle();
 
@@ -165,6 +165,22 @@ export async function POST(request: Request) {
     if (delError) {
       console.error("Notice delete failed:", delError.message);
       return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+        // Chobi chhilo? Storage theke-o muchhi
+    if (notice.image_url) {
+      const marker = "/object/public/notice-images/";
+      const idx = notice.image_url.indexOf(marker);
+      if (idx !== -1) {
+        const imgPath = notice.image_url.slice(idx + marker.length);
+        if (imgPath) {
+          const { error: imgError } = await adminClient.storage
+            .from("notice-images")
+            .remove([imgPath]);
+          if (imgError) {
+            console.error("Notice image cleanup failed:", imgError.message);
+          }
+        }
+      }
     }
 
     await writeAudit(adminClient, actorId, action, "notices", target_id);

@@ -71,8 +71,7 @@ export default function ProfileEditForm({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     initial?.avatar_url ?? null
   );
-    // Sesh bar SAVE-kora chhilo je avatar — cleanup er
-  // hishab eta diye (initial 2nd save-e stale hoye jay)
+  // Sesh bar SAVE-kora chhilo je avatar — cleanup er hishab
   const [savedAvatarUrl, setSavedAvatarUrl] = useState<string | null>(
     initial?.avatar_url ?? null
   );
@@ -99,22 +98,28 @@ export default function ProfileEditForm({
     setSuccess(false);
   }
 
-    // Purono avatar file Storage theke muchhe dey
-  async function deleteOldAvatar(
-    supabase: ReturnType<typeof createClient>,
-    url: string
-  ) {
-    const marker = "/avatars/";
-    const idx = url.indexOf(marker);
-    if (idx === -1) return { error: null };
+  // Purono avatar Storage theke muchhe dey — SERVER-route
+  // diye (service-role): RLS-e atkabe na, guaranteed
+  async function deleteOldAvatar(url: string) {
+    try {
+      const res = await fetch("/api/delete-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
 
-    const oldPath = url.slice(idx + marker.length);
-    if (!oldPath) return { error: null };
-
-    const { error } = await supabase.storage
-      .from("avatars")
-      .remove([oldPath]);
-    return { error: error ? error.message : null };
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        console.error(
+          "Avatar cleanup failed:",
+          data.error ?? res.status,
+          "|",
+          url
+        );
+      }
+    } catch (e) {
+      console.error("Avatar cleanup failed:", e);
+    }
   }
 
   async function handleSave(e: FormEvent) {
@@ -157,14 +162,9 @@ export default function ProfileEditForm({
       }
 
       // CLEANUP: ager SAVE-kora avatar ar use hocche na —
-      // Storage theke-o muchhe de. Ekhon error dhore dekhai
-      const { error: removeError } =
-        savedAvatarUrl && savedAvatarUrl !== avatarUrl
-          ? await deleteOldAvatar(supabase, savedAvatarUrl)
-          : { error: null };
-
-      if (removeError) {
-        console.error("Avatar cleanup failed:", removeError);
+      // Storage theke muchhe de (server diye)
+      if (savedAvatarUrl && savedAvatarUrl !== avatarUrl) {
+        await deleteOldAvatar(savedAvatarUrl);
       }
 
       setSavedAvatarUrl(avatarUrl);
@@ -184,7 +184,6 @@ export default function ProfileEditForm({
       .toUpperCase() || "?";
 
   return (
-    
     <form onSubmit={handleSave} className="mt-8 space-y-5">
       {/* প্রোফাইল ছবি */}
       <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
