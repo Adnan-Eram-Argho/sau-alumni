@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import ThemeToggle from "@/components/ThemeToggle";
 
-// Sob page-er upore boshe thake — ke login kora ache dekhay
 export default function Header() {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -12,14 +12,11 @@ export default function Header() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Prothome ekhon-er obostha nei
     supabase.auth.getUser().then(({ data: { user } }) => {
       setEmail(user?.email ?? null);
       setLoading(false);
     });
 
-    // Tarpor login/logout hole khub somoyei jene nite
-    // subscription — page theke gele cleanup (unsubscribe)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -32,44 +29,59 @@ export default function Header() {
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    // onAuthStateChange header ke nije-i update kore debe
   }
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/" className="font-bold text-green-800">
-          SAU Alumni
+    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" className="flex items-center gap-2 font-bold">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-sm font-black text-white">
+            SAU
+          </span>
+          <span className="text-sau dark:text-emerald-300">SAU Alumni</span>
         </Link>
 
-        {loading ? (
-          <div className="h-8 w-24 animate-pulse rounded bg-gray-100" />
-        ) : email ? (
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-gray-600">{email}</span>
-            <button
-              onClick={handleLogout}
-              className="rounded-lg border border-gray-300 px-3 py-1.5 font-medium hover:bg-gray-50"
-            >
-              লগআউট
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-sm">
-            <Link
-              href="/auth/login"
-              className="rounded-lg border border-gray-300 px-3 py-1.5 font-medium hover:bg-gray-50"
-            >
-              লগইন
-            </Link>
-            <Link
-              href="/auth/signup"
-              className="rounded-lg bg-green-700 px-3 py-1.5 font-medium text-white hover:bg-green-800"
-            >
-              সাইন আপ
-            </Link>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/directory"
+            className="hidden rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base sm:block"
+          >
+            ডিরেক্টরি
+          </Link>
+
+          {loading ? (
+            <div className="h-8 w-24 animate-pulse rounded bg-base" />
+          ) : email ? (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="hidden max-w-40 truncate text-ink/70 md:block">
+                {email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+              >
+                লগআউট
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm">
+              <Link
+                href="/auth/login"
+                className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+              >
+                লগইন
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-lg bg-sau px-3 py-1.5 font-medium text-white hover:bg-sau-hover"
+              >
+                সাইন আপ
+              </Link>
+            </div>
+          )}
+
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

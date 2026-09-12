@@ -1,103 +1,115 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+const features = [
+  {
+    emoji: "🔍",
+    title: "সবাইকে খুঁজে পাও",
+    text: "নাম, প্রতিষ্ঠান বা কাজের জায়গা দিয়ে সার্চ — দেশ, বিভাগ ও ব্যাচ অনুযায়ী ফিল্টার।",
+    soon: false,
+  },
+  {
+    emoji: "👤",
+    title: "নিজের প্রোফাইল",
+    text: "ব্যাচ, এখনকার কাজ, উচ্চশিক্ষার তথ্য — সব এক জায়গায়। কী দেখাবে, সম্পূর্ণ তোমার হাতে।",
+    soon: false,
+  },
+  {
+    emoji: "📢",
+    title: "নোটিশ বোর্ড",
+    text: "ফ্যাকাল্টি ও বিভাগের আপডেট, ইভেন্ট, দরকারি খবর — এক জায়গায়।",
+    soon: true,
+  },
+  {
+    emoji: "💼",
+    title: "চাকরির খবর",
+    text: "এলামনাইরা শেয়ার করা চাকরির সুযোগ — সবার জন্য খোলা।",
+    soon: true,
+  },
+];
+
+export default function HomePage() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div>
+      {/* Hero — sobar prothom dekha */}
+      <section className="bg-sau text-white">
+        <div className="mx-auto max-w-6xl px-4 py-16 text-center sm:py-24">
+          <p className="text-sm font-medium tracking-wide text-emerald-200">
+            শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · ঢাকা
+          </p>
+          <h1 className="mx-auto mt-4 max-w-3xl text-3xl font-bold leading-snug sm:text-5xl sm:leading-tight">
+            এক ক্যাম্পাস, এক পরিবার —{" "}
+            <span className="text-amber-300">সারা পৃথিবীতে</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base text-emerald-100 sm:text-lg">
+            SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের নেটওয়ার্ক। তোমার
+            ব্যাচমেট কোথায় আছে — দেশে না বিদেশে — এক সার্চেই খুঁজে নাও।
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/auth/signup"
+              className="rounded-xl bg-amber-400 px-6 py-3 font-semibold text-emerald-950 transition hover:bg-amber-300"
+            >
+              যোগ দিন — একদম ফ্রি
+            </Link>
+            <Link
+              href="/directory"
+              className="rounded-xl border border-emerald-200/60 px-6 py-3 font-semibold text-white transition hover:bg-white/10"
+            >
+              ডিরেক্টরি দেখুন
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </section>
+
+      {/* Features */}
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <h2 className="text-center text-2xl font-bold sm:text-3xl">
+          এখানে কী পাবে?
+        </h2>
+        <p className="mx-auto mt-2 max-w-xl text-center text-ink/60">
+          পুরনো বন্ধুত্ব খুঁজে পাওয়া থেকে নতুন সুযোগ — সবই এক জায়গায়।
+        </p>
+
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {features.map((f) => (
+            <div
+              key={f.title}
+              className="rounded-2xl border border-line bg-surface p-6 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-3xl">{f.emoji}</span>
+                {f.soon && (
+                  <span className="rounded-full bg-base px-2.5 py-0.5 text-xs font-medium text-ink/60">
+                    শীঘ্রই
+                  </span>
+                )}
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">{f.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-ink/70">{f.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Niche CTA */}
+      <section className="border-y border-line bg-surface">
+        <div className="mx-auto max-w-3xl px-4 py-14 text-center">
+          <h2 className="text-2xl font-bold sm:text-3xl">
+            তোমার প্রোফাইল কি এখনো নেই?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-ink/70">
+            ২ মিনিটে অ্যাকাউন্ট খুলে নিজের তথ্য যোগ করো — যেন পুরনো বন্ধুরা
+            তোমাকে খুঁজে পেতে পারে।
+          </p>
+          <Link
+            href="/auth/signup"
+            className="mt-6 inline-block rounded-xl bg-sau px-6 py-3 font-semibold text-white transition hover:bg-sau-hover"
+          >
+            অ্যাকাউন্ট খুলুন
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,20 +1,37 @@
 @import "tailwindcss";
 
+/* Dark mode: class strategy (spec Section 29) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* SAU theme — agriculture-inspired */
+  --bg: #faf6ea; /* warm cream */
+  --surface: #ffffff;
+  --ink: #20301f; /* lekhar rong */
+  --line: #e7e0cd;
+}
+
+.dark {
+  /* dark mode: muted green, pure black na */
+  --bg: #111814;
+  --surface: #1a231d;
+  --ink: #e7efe8;
+  --line: #2c382f;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-base: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-line: var(--line);
+  --color-sau: #1e5c3a; /* deep forest green */
+  --color-sau-hover: #174a2e;
+  --color-gold: #b45309; /* harvest gold */
   --font-sans: var(--font-hind-siliguri);
 }
 
-/* Dark-mode media query ইচ্ছাকৃতভাবে বাদ —
-   আসল dark mode (toggle সহ) Phase ৩-এ spec মতো আসবে */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-hind-siliguri), "Segoe UI", Arial, sans-serif;
 }

@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
-// Bangla + English dutoi sundor dekhay. Build er somoy Google
-// Fonts theke download hoy nijer server-e boshe jay
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
   subsets: ["bengali", "latin"],
@@ -12,8 +11,9 @@ const hindSiliguri = Hind_Siliguri({
 });
 
 export const metadata: Metadata = {
-  title: "SAU Alumni",
-  description: "Sher-e-Bangla Agricultural University Alumni Network",
+  title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+  description:
+    "Sher-e-Bangla Agricultural University-er alumni ar current student-der network — khunje nin shob batch-mate, desh-bidesh.",
 };
 
 export default function RootLayout({
@@ -22,10 +22,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="bn">
-      <body className={`${hindSiliguri.variable} antialiased`}>
+    <html lang="bn" suppressHydrationWarning>
+      <body
+        className={`${hindSiliguri.variable} flex min-h-screen flex-col bg-base text-ink antialiased`}
+      >
+        {/* Dark mode flash atkay — page dekhchharon age theme bose jay */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
+          }}
+        />
         <Header />
-        {children}
+        <div className="flex-1">{children}</div>
+        <Footer />
       </body>
     </html>
   );
