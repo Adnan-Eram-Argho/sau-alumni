@@ -122,6 +122,14 @@ export default function LoginPage() {
                 required
               />
             </div>
+            <div className="flex justify-end">
+              <Link
+                href="/auth/forgot-password"
+                className="text-xs font-medium text-sau hover:underline dark:text-emerald-300"
+              >
+                পাসওয়ার্ড ভুলে গেছো?
+              </Link>
+            </div>
 
             {error && (
               <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
