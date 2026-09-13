@@ -21,6 +21,12 @@ export const metadata: Metadata = {
   icons: {
     apple: "/icons/apple-touch-icon.png",
   },
+  verification: {
+    google: "DkJs8EUim9VsvxeFGZcqVDGc-1k9hApjEqNAuFsapyw",
+    other: {
+      "msvalidate.01": "BING-ER-CODE-PORE-EKHANE",
+    },
+  },
 };
 
 export default function RootLayout({
