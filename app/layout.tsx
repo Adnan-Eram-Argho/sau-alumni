@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MadeByBadge from "@/components/MadeByBadge";
+import { Analytics } from "@vercel/analytics/next";
 
 const hindSiliguri = Hind_Siliguri({
   variable: "--font-hind-siliguri",
@@ -40,6 +41,7 @@ export default function RootLayout({
         <div className="flex-1">{children}</div>
         <Footer />
         <MadeByBadge />
+        <Analytics />
       </body>
     </html>
   );
