@@ -48,8 +48,24 @@ export default function Header() {
     <header className="sticky top-0 z-40 glass">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="group flex items-center gap-2.5 font-bold">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-sm font-black text-white shadow-md transition-shadow group-hover:glow-green">
-            SAU
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-white shadow-md transition-shadow group-hover:glow-green">
+            <svg viewBox="0 0 32 32" fill="none" className="h-6 w-6" aria-hidden="true">
+              {/* Seedling stem */}
+              <path d="M16 28c0-6 0-10 0-14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              {/* Left leaf */}
+              <path d="M16 20c-3-1-6-3-7-7 4 0 6 2 7 5" fill="currentColor" opacity="0.85" />
+              {/* Right leaf */}
+              <path d="M16 16c3-1 6-4 7-8-4 0-6 3-7 6" fill="currentColor" opacity="0.85" />
+              {/* Graduation cap top */}
+              <polygon points="16,4 6,9 16,14 26,9" fill="currentColor" />
+              {/* Graduation cap base */}
+              <rect x="14" y="9" width="4" height="3" rx="0.5" fill="currentColor" opacity="0.7" />
+              {/* Tassel */}
+              <path d="M6,9 L6,13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="6" cy="14" r="1" fill="currentColor" />
+              {/* Ground arc */}
+              <path d="M10 28q6-2 12 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+            </svg>
           </span>
           <span className="text-sau dark:text-emerald-300">SAU Alumni</span>
         </Link>

@@ -17,14 +17,65 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://sau-alumni.vercel.app"),
   title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
   description:
-    "Sher-e-Bangla Agricultural University-er alumni ar current student-der network — khunje nin shob batch-mate, desh-bidesh.",
+    "Connect with alumni and current students of Sher-e-Bangla Agricultural University (SAU), Dhaka. Search by name, batch, department, or country — find your batchmates across the world.",
+  keywords: [
+    "SAU",
+    "Sher-e-Bangla Agricultural University",
+    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+    "alumni",
+    "alumni network",
+    "Dhaka",
+    "Bangladesh",
+    "agricultural university",
+    "batchmate",
+    "directory",
+  ],
+  authors: [{ name: "Adnan Eram Argho" }],
+  creator: "Adnan Eram Argho",
   icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
     apple: "/icons/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+    description:
+      "Connect with alumni and current students of Sher-e-Bangla Agricultural University. Search by name, batch, department, or country.",
+    siteName: "SAU Alumni Network",
+    type: "website",
+    locale: "bn_BD",
+    url: "https://sau-alumni.vercel.app",
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "SAU Alumni Network",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+    description:
+      "Connect with alumni and current students of Sher-e-Bangla Agricultural University. Find your batchmates across the world.",
+    images: ["/icons/icon-512.png"],
   },
   verification: {
     google: "DkJs8EUim9VsvxeFGZcqVDGc-1k9hApjEqNAuFsapyw",
-    other: {
-      "msvalidate.01": "BING-ER-CODE-PORE-EKHANE",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
 };
