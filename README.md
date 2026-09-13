@@ -57,6 +57,8 @@ A directory-first alumni platform: the core value is a **searchable public direc
 
 Design intent: **trust** (verification, audit log, trigger-guarded privileges) + **frictionless signup** (instant, no email confirmation — see §24) + **privacy control** (public/private profile, phone visibility levels) + **zero-cost operation**.
 
+Analytics: **Vercel Analytics** (`@vercel/analytics/next`) is integrated in the root layout for page-view tracking.
+
 ---
 
 ## 2. Feature Map
@@ -103,6 +105,7 @@ Design intent: **trust** (verification, audit log, trigger-guarded privileges) +
 | Motion & Animation | Framer Motion (`framer-motion`) | Page transitions, spring physics, drawer & card reveals |
 | Smooth Scrolling | Lenis (`lenis`) | Momentum inertial smooth scrolling (reduced-motion safe) |
 | 3D Graphics | Three.js + React Three Fiber (`three`, `@react-three/fiber`, `@react-three/drei`) | Botanical floating seed hero scene with device-aware CSS fallback |
+| Analytics | Vercel Analytics (`@vercel/analytics/next`) | Page-view tracking; loaded in root layout |
 
 ---
 
@@ -164,7 +167,9 @@ app/
   auth/
     login/page.tsx            split-screen modern login with hero gradient panel
     signup/page.tsx           split-screen instant signup
-    callback/route.ts         auth code exchange (kept for future email-confirmation flows)
+    forgot-password/page.tsx  email-based password reset request (sends reset link)
+    reset-password/page.tsx   set new password (reached via email reset link → callback)
+    callback/route.ts         auth code exchange + profile row creation (used by reset-password flow and future email-confirmation)
 
   directory/
     page.tsx                  public directory: search, filters, keyset pagination, contacts via VIEW
@@ -391,7 +396,11 @@ Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (
 
 **Login:** `signInWithPassword`; generic error message (never reveals whether the email exists). Supports `?next=/path` redirect (validated: must start with `/` and not `//`).
 
-**Middleware (`middleware.ts`):** refreshes the Supabase session on every request; redirects logged-out users from `/dashboard` and `/admin` to `/auth/login?next=...`; rate-limits (10/min/IP) the login/signup pages via Upstash.
+**Forgot Password (`app/auth/forgot-password/page.tsx`):** Zod-validated email → `supabase.auth.resetPasswordForEmail` with `redirectTo` pointing at `/auth/callback?next=/auth/reset-password` → success banner instructs user to check email (incl. spam folder). Rate-limited via middleware.
+
+**Reset Password (`app/auth/reset-password/page.tsx`):** Reached after clicking the email link → callback exchanges code for session → page lets user set a new password (min 10 chars, confirm match, Zod). `supabase.auth.updateUser({ password })` → redirect to `/dashboard`. Handles weak/leaked-password and missing-session errors with Bangla messages.
+
+**Middleware (`middleware.ts`):** refreshes the Supabase session on every request; redirects logged-out users from `/dashboard` and `/admin` to `/auth/login?next=...`; rate-limits (10/min/IP) the login/signup/forgot-password pages via Upstash.
 
 **Fallback guard:** the dashboard detects "logged in but no profiles row" (e.g., network failure during signup) and shows a "create profile" banner; the profile edit page upserts, so it self-heals.
 
@@ -447,7 +456,11 @@ Responses: `{ok:true}` / 4xx with `{error: "..."}`.
 ### `POST /api/delete-image` — storage cleanup
 `{ url }` — login required; URL must be a Supabase public URL of bucket `avatars` or `notice-images`; path must start with the caller's user id; deletes via service-role. Returns `{ok:true}` / 403 `{error:"forbidden"}`.
 
-### `GET /auth/callback` — auth code exchange (kept for future flows)
+### `GET /api/health` — uptime monitoring
+Returns `{ status: "ok", db: "ok" }` (200) if the DB is reachable; `{ status: "unhealthy", db: "error" }` (500) otherwise. Used by external monitors like UptimeRobot.
+
+### `GET /auth/callback` — auth code exchange
+Exchanges the `code` query param for a session; if the user has no `profiles` row yet (e.g., signup email confirmation), auto-creates one with their `user_metadata.full_name`. Validates `next` param (must start with `/`, not `//`) to prevent open redirect. Used by **password reset** and retained for **future email-confirmation** flows.
 
 ---
 
@@ -461,13 +474,18 @@ Responses: `{ok:true}` / 4xx with `{error: "..."}`.
 | `/notices` | public | pinned first, 30 latest published |
 | `/notices/[slug]` | public | markdown+sanitize; draft preview only for its author |
 | `/faculty/[slug]` | public | departments + counts |
-| `/about` | public | credits |
-| `/offline` | public | PWA fallback |
-| `/auth/login`, `/auth/signup` | public | themed |
+| `/about` | public | credits + creator mini-portfolio |
+| `/privacy` | public | গোপনীয়তা নীতি — plain Bangla privacy policy |
+| `/terms` | public | শর্তাবলী — terms of service |
+| `/offline` | public | PWA offline fallback |
+| `/auth/login`, `/auth/signup` | public | split-screen themed |
+| `/auth/forgot-password` | public | email-based password reset request |
+| `/auth/reset-password` | public (session via callback) | set new password after email link |
 | `/dashboard` | login | guards + verification card |
 | `/dashboard/profile` | login | upsert profile |
 | `/dashboard/contact` | login | phone visibility + is_public |
 | `/dashboard/notices` (+`/new`, `/[id]/edit`) | login (contributor+ for write) | drafts management |
+| `/dashboard/upload-test` | login | manual image-upload test page (dev utility) |
 | `/admin` | admin+ | member management |
 | `/admin/queues` | admin+ | notices/verification/reports + audit |
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest`, `/sw.js` | public | generated |
