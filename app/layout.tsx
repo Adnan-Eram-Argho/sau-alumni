@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MadeByBadge from "@/components/MadeByBadge";
+import SmoothScroll from "@/components/SmoothScroll";
 import { Analytics } from "@vercel/analytics/next";
 
 const hindSiliguri = Hind_Siliguri({
@@ -30,16 +31,18 @@ export default function RootLayout({
   return (
     <html lang="bn" suppressHydrationWarning>
       <body
-        className={`${hindSiliguri.variable} flex min-h-screen flex-col bg-base text-ink antialiased`}
+        className={`${hindSiliguri.variable} flex min-h-screen flex-col bg-base text-ink antialiased bg-grain`}
       >
         <script
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}`,
           }}
         />
-        <Header />
-        <div className="flex-1">{children}</div>
-        <Footer />
+        <SmoothScroll>
+          <Header />
+          <div className="relative z-[1] flex-1">{children}</div>
+          <Footer />
+        </SmoothScroll>
         <MadeByBadge />
         <Analytics />
       </body>

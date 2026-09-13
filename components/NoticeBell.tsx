@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell } from "lucide-react";
 
 // Notun/pore-na notice-r bell — login chara dekhay na
 export default function NoticeBell() {
@@ -79,14 +81,33 @@ export default function NoticeBell() {
       href="/notices"
       aria-label="নোটিশ বোর্ড"
       title="নোটিশ বোর্ড"
-      className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line text-lg hover:bg-base"
+      className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink/60 transition-all hover:bg-sau/5 hover:text-sau dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
     >
-      🔔
-      {unread !== null && unread > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
-          {unread > 9 ? "9+" : unread}
-        </span>
-      )}
+      <Bell className={`h-4.5 w-4.5 ${unread && unread > 0 ? "animate-[ring_1s_ease-in-out]" : ""}`} />
+      <AnimatePresence>
+        {unread !== null && unread > 0 && (
+          <motion.span
+            key="badge"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white shadow-sm"
+          >
+            {unread > 9 ? "9+" : unread}
+          </motion.span>
+        )}
+      </AnimatePresence>
+      <style>{`
+        @keyframes ring {
+          0% { transform: rotate(0); }
+          15% { transform: rotate(14deg); }
+          30% { transform: rotate(-14deg); }
+          45% { transform: rotate(8deg); }
+          60% { transform: rotate(-8deg); }
+          75% { transform: rotate(3deg); }
+          100% { transform: rotate(0); }
+        }
+      `}</style>
     </Link>
   );
 }

@@ -2,6 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Crown,
+  Shield,
+  Feather,
+  User,
+  CheckCircle2,
+  ArrowUp,
+  ArrowDown,
+  PauseCircle,
+  RotateCcw,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 type Member = {
   id: string;
@@ -14,11 +27,30 @@ type Member = {
   joined: string;
 };
 
-const roleLabels: Record<string, string> = {
-  super_admin: "👑 Super Admin",
-  admin: "🛡️ Admin",
-  contributor: "✍️ Contributor",
-  alumni: "Alumni",
+const roleConfig: Record<
+  string,
+  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
+> = {
+  super_admin: {
+    label: "Super Admin",
+    icon: Crown,
+    color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  },
+  admin: {
+    label: "Admin",
+    icon: Shield,
+    color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  },
+  contributor: {
+    label: "Contributor",
+    icon: Feather,
+    color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+  },
+  alumni: {
+    label: "Alumni",
+    icon: User,
+    color: "bg-base text-ink/70 border-line",
+  },
 };
 
 export default function AdminMemberList({
@@ -30,7 +62,7 @@ export default function AdminMemberList({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
 
   async function act(action: string, targetId: string, value?: boolean) {
     setBusy(true);
@@ -43,11 +75,11 @@ export default function AdminMemberList({
       });
 
       if (!res.ok) {
-        setMessage("❌ কাজটা হলো না — অনুমতি নেই বা সমস্যা হয়েছে");
+        setMessage({ text: "কাজটা হলো না — অনুমতি নেই বা সমস্যা হয়েছে", success: false });
         return;
       }
 
-      setMessage("✓ হয়ে গেছে");
+      setMessage({ text: "সফলভাবে সম্পন্ন হয়েছে", success: true });
       router.refresh();
     } finally {
       setBusy(false);
@@ -56,7 +88,22 @@ export default function AdminMemberList({
 
   return (
     <div>
-      {message && <p className="mt-4 rounded-lg bg-base p-3 text-sm">{message}</p>}
+      {message && (
+        <div
+          className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-sm transition-all ${
+            message.success
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
+          }`}
+        >
+          {message.success ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          )}
+          <span>{message.text}</span>
+        </div>
+      )}
 
       <div className="mt-6 space-y-3">
         {members.map((m) => {
@@ -66,27 +113,42 @@ export default function AdminMemberList({
             m.role === "super_admin" ||
             (m.role === "admin" && actorRole !== "super_admin");
 
+          const roleInfo = roleConfig[m.role] ?? {
+            label: m.role,
+            icon: User,
+            color: "bg-base text-ink/70 border-line",
+          };
+          const RoleIcon = roleInfo.icon;
+
           return (
             <div
               key={m.id}
-              className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4 shadow-sm ${
-                m.deleted ? "opacity-60" : ""
+              className={`group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4.5 backdrop-blur-sm shadow-sm transition-all duration-200 hover:border-sau/30 hover:shadow-md ${
+                m.deleted ? "opacity-60 bg-surface/40" : ""
               }`}
             >
               <div className="min-w-0">
-                <p className="flex flex-wrap items-center gap-2 font-medium">
-                  <span className="truncate">{m.full_name}</span>
-                  {m.is_verified && <span title="Verified">✅</span>}
-                  <span className="rounded-full bg-base px-2.5 py-0.5 text-xs font-medium">
-                    {roleLabels[m.role] ?? m.role}
-                  </span>
-                  {m.deleted && (
-                    <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
-                      ⏸️ Suspend করা
+                <div className="flex flex-wrap items-center gap-2 font-medium">
+                  <span className="truncate text-ink font-semibold">{m.full_name}</span>
+                  {m.is_verified && (
+                    <span title="Verified" className="inline-flex text-sau">
+                      <CheckCircle2 className="h-4 w-4 fill-sau/15 text-sau" />
                     </span>
                   )}
-                </p>
-                <p className="mt-0.5 truncate text-xs text-ink/50">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${roleInfo.color}`}
+                  >
+                    <RoleIcon className="h-3 w-3" />
+                    <span>{roleInfo.label}</span>
+                  </span>
+                  {m.deleted && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-100/80 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
+                      <PauseCircle className="h-3 w-3" />
+                      <span>Suspend করা</span>
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 truncate text-xs text-ink/50">
                   {m.email} · যোগ: {m.joined}
                 </p>
               </div>
@@ -97,9 +159,11 @@ export default function AdminMemberList({
                     <button
                       onClick={() => act("set_verified", m.id, !m.is_verified)}
                       disabled={busy}
-                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-base disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
                     >
-                      {m.is_verified ? "Unverify" : "✅ Verify"}
+                      {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <CheckCircle2 className="h-3.5 w-3.5 text-sau" />
+                      <span>{m.is_verified ? "Unverify" : "Verify"}</span>
                     </button>
                   )}
 
@@ -107,9 +171,10 @@ export default function AdminMemberList({
                     <button
                       onClick={() => act("make_contributor", m.id)}
                       disabled={busy}
-                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-base disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
                     >
-                      ⬆️ Contributor
+                      <ArrowUp className="h-3.5 w-3.5 text-purple-500" />
+                      <span>Contributor</span>
                     </button>
                   )}
 
@@ -117,9 +182,10 @@ export default function AdminMemberList({
                     <button
                       onClick={() => act("make_alumni", m.id)}
                       disabled={busy}
-                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-base disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
                     >
-                      ⬇️ Alumni
+                      <ArrowDown className="h-3.5 w-3.5 text-ink/60" />
+                      <span>Alumni</span>
                     </button>
                   )}
 
@@ -128,9 +194,10 @@ export default function AdminMemberList({
                       <button
                         onClick={() => act("make_admin", m.id)}
                         disabled={busy}
-                        className="rounded-lg border border-line px-3 py-1.5 hover:bg-base disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
                       >
-                        🛡️ Admin
+                        <Shield className="h-3.5 w-3.5 text-blue-500" />
+                        <span>Admin</span>
                       </button>
                     )}
 
@@ -138,9 +205,10 @@ export default function AdminMemberList({
                     <button
                       onClick={() => act("demote_admin", m.id)}
                       disabled={busy}
-                      className="rounded-lg border border-line px-3 py-1.5 hover:bg-base disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
                     >
-                      ⬇️ নামাও
+                      <ArrowDown className="h-3.5 w-3.5 text-amber-500" />
+                      <span>নামাও</span>
                     </button>
                   )}
 
@@ -148,17 +216,19 @@ export default function AdminMemberList({
                     <button
                       onClick={() => act("restore", m.id)}
                       disabled={busy}
-                      className="rounded-lg bg-sau px-3 py-1.5 font-medium text-white hover:bg-sau-hover disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-sau px-3 py-1.5 font-medium text-white shadow-sm transition-all hover:bg-sau-hover disabled:opacity-50"
                     >
-                      ↩️ Restore
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Restore</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => act("suspend", m.id)}
                       disabled={busy}
-                      className="rounded-lg border border-red-300 px-3 py-1.5 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-red-300/80 px-3 py-1.5 font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
                     >
-                      ⏸️ Suspend
+                      <PauseCircle className="h-3.5 w-3.5" />
+                      <span>Suspend</span>
                     </button>
                   )}
                 </div>

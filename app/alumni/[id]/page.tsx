@@ -3,6 +3,30 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import CountryFlag from "@/components/CountryFlag";
+import AnimatedSection from "@/components/AnimatedSection";
+import {
+  BadgeCheck,
+  GraduationCap,
+  Briefcase,
+  Mail,
+  Phone,
+  ArrowLeft,
+  Lock,
+  User,
+} from "lucide-react";
+
+function LinkedinIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.66 1.66 0 0 0-1.66 1.66 1.66 1.66 0 0 0 1.66 1.66 1.66 1.66 0 0 0 1.66-1.66 1.66 1.66 0 0 0-1.66-1.66Z" />
+    </svg>
+  );
+}
 
 type ProfileData = {
   id: string;
@@ -151,123 +175,152 @@ export default async function ProfilePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <Link
-        href="/directory"
-        className="text-sm font-medium text-ink/60 hover:text-ink"
-      >
-        ← ডিরেক্টরিতে ফিরুন
-      </Link>
+      <AnimatedSection>
+        <Link
+          href="/directory"
+          className="group inline-flex items-center gap-1.5 text-sm font-medium text-ink/50 transition-colors hover:text-sau dark:hover:text-emerald-300"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+          ডিরেক্টরিতে ফিরুন
+        </Link>
+      </AnimatedSection>
 
       {isPrivate && (
-        <p className="mt-4 rounded-xl border border-amber-300/60 bg-amber-100/60 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
-          🔒 এই প্রোফাইলটি এখন private — শুধু তুমি নিজেই দেখতে পাচ্ছো। বন্ধুরা
-          যেন খুঁজে পায়, প্রোফাইলটি public করে দাও (profile edit-er option)।
-        </p>
+        <AnimatedSection delay={0.1}>
+          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-300/60 bg-amber-100/60 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              এই প্রোফাইলটি এখন private — শুধু তুমি নিজেই দেখতে পাচ্ছো। বন্ধুরা
+              যেন খুঁজে পায়, প্রোফাইলটি public করে দাও (profile edit-er option)।
+            </p>
+          </div>
+        </AnimatedSection>
       )}
 
       {/* Identity card */}
-      <div className="mt-6 flex flex-wrap items-start gap-5 rounded-2xl border border-line bg-surface p-6 shadow-sm">
-        {p.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={p.avatar_url}
-            alt={p.full_name}
-            className="h-20 w-20 shrink-0 rounded-full border-2 border-sau object-cover"
-          />
-        ) : (
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sau text-2xl font-bold text-white">
-            {initials}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
-            <span>{p.full_name}</span>
-            {p.is_verified && (
-              <span title="Verified alumni" className="text-lg">
-                ✅
-              </span>
-            )}
-          </h1>
-          <p className="mt-1 text-ink/60">
-            {[dept, faculty].filter(Boolean).join(" · ") || "SAU"}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-full bg-base px-3 py-1 font-medium">
-              {p.status === "current_student"
-                ? "🎓 বর্তমান শিক্ষার্থী"
-                : "SAU Alumni"}
-            </span>
-            {p.graduation_year && (
-              <span className="rounded-full bg-base px-3 py-1 font-medium">
-                ব্যাচ {p.graduation_year}
-              </span>
-            )}
-            {p.current_country && (
+      <AnimatedSection delay={0.15}>
+        <div className="mt-6 glass-card flex flex-wrap items-start gap-5 rounded-2xl p-6">
+          {p.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={p.avatar_url}
+              alt={p.full_name}
+              className="h-20 w-20 shrink-0 rounded-full object-cover ring-3 ring-sau/20"
+            />
+          ) : (
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sau to-sau-hover text-2xl font-bold text-white">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+              <span>{p.full_name}</span>
+              {p.is_verified && (
+                <BadgeCheck className="h-5 w-5 text-sau dark:text-emerald-400" />
+              )}
+            </h1>
+            <p className="mt-1 text-ink/50">
+              {[dept, faculty].filter(Boolean).join(" · ") || "SAU"}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
               <span className="flex items-center gap-1.5 rounded-full bg-base px-3 py-1 font-medium">
-                <CountryFlag country={p.current_country} />
-                {p.current_country}
+                {p.status === "current_student" ? (
+                  <>
+                    <GraduationCap className="h-3.5 w-3.5 text-sau/60" />
+                    বর্তমান শিক্ষার্থী
+                  </>
+                ) : (
+                  <>
+                    <User className="h-3.5 w-3.5 text-sau/60" />
+                    SAU Alumni
+                  </>
+                )}
               </span>
-            )}
+              {p.graduation_year && (
+                <span className="rounded-full bg-base px-3 py-1 font-medium">
+                  ব্যাচ {p.graduation_year}
+                </span>
+              )}
+              {p.current_country && (
+                <span className="flex items-center gap-1.5 rounded-full bg-base px-3 py-1 font-medium">
+                  <CountryFlag country={p.current_country} />
+                  {p.current_country}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </AnimatedSection>
 
       {/* Ekhonkar obostha */}
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">এখনকার অবস্থা</h2>
-        {p.higher_study_program || p.higher_study_institution ? (
-          <p className="mt-2">
-            🎓{" "}
-            {[p.higher_study_program, p.higher_study_institution]
-              .filter(Boolean)
-              .join(" — ")}
-          </p>
-        ) : p.current_designation || p.current_company ? (
-          <p className="mt-2">
-            💼{" "}
-            {[p.current_designation, p.current_company]
-              .filter(Boolean)
-              .join(" @ ")}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-ink/50">তথ্য এখনো যোগ করা হয়নি।</p>
-        )}
-      </div>
+      <AnimatedSection delay={0.25}>
+        <div className="mt-6 glass-card rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">এখনকার অবস্থা</h2>
+          {p.higher_study_program || p.higher_study_institution ? (
+            <p className="mt-2 flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 shrink-0 text-sau/60" />
+              {[p.higher_study_program, p.higher_study_institution]
+                .filter(Boolean)
+                .join(" — ")}
+            </p>
+          ) : p.current_designation || p.current_company ? (
+            <p className="mt-2 flex items-center gap-2">
+              <Briefcase className="h-4 w-4 shrink-0 text-sau/60" />
+              {[p.current_designation, p.current_company]
+                .filter(Boolean)
+                .join(" @ ")}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-ink/40">তথ্য এখনো যোগ করা হয়নি।</p>
+          )}
+        </div>
+      </AnimatedSection>
 
       {/* Bio */}
       {p.bio && (
-        <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">পরিচিতি</h2>
-          <p className="mt-2 whitespace-pre-line text-ink/80">{p.bio}</p>
-        </div>
+        <AnimatedSection delay={0.3}>
+          <div className="mt-6 glass-card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold">পরিচিতি</h2>
+            <p className="mt-2 whitespace-pre-line text-ink/70 leading-relaxed">{p.bio}</p>
+          </div>
+        </AnimatedSection>
       )}
 
       {/* Contact */}
       {(c?.email || c?.phone_number || p.linkedin_url) && (
-        <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">যোগাযোগ</h2>
-          <div className="mt-3 space-y-2 text-sm">
-            {c?.email && (
-              <a
-                href={`mailto:${c.email}`}
-                className="block break-all text-sau hover:underline dark:text-emerald-300"
-              >
-                ✉️ {c.email}
-              </a>
-            )}
-            {c?.phone_number && <p className="break-all">📞 {c.phone_number}</p>}
-            {p.linkedin_url && (
-              <a
-                href={p.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block break-all text-sau hover:underline dark:text-emerald-300"
-              >
-                in — LinkedIn প্রোফাইল
-              </a>
-            )}
+        <AnimatedSection delay={0.35}>
+          <div className="mt-6 glass-card rounded-2xl p-6">
+            <h2 className="text-lg font-semibold">যোগাযোগ</h2>
+            <div className="mt-3 space-y-2.5 text-sm">
+              {c?.email && (
+                <a
+                  href={`mailto:${c.email}`}
+                  className="flex items-center gap-2.5 break-all text-sau transition-colors hover:underline dark:text-emerald-300"
+                >
+                  <Mail className="h-4 w-4 shrink-0" />
+                  {c.email}
+                </a>
+              )}
+              {c?.phone_number && (
+                <p className="flex items-center gap-2.5 break-all">
+                  <Phone className="h-4 w-4 shrink-0 text-ink/40" />
+                  {c.phone_number}
+                </p>
+              )}
+              {p.linkedin_url && (
+                <a
+                  href={p.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 break-all text-sau transition-colors hover:underline dark:text-emerald-300"
+                >
+                  <LinkedinIcon className="h-4 w-4 shrink-0" />
+                  LinkedIn প্রোফাইল
+                </a>
+              )}
+            </div>
           </div>
-        </div>
+        </AnimatedSection>
       )}
     </div>
   );

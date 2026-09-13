@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 
 type Props = {
   faculties: { id: string; name: string }[];
@@ -51,15 +52,21 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
 
   const hasFilter = text || loc !== "all" || country || faculty;
 
+  const selectClass =
+    "rounded-xl border border-line bg-surface px-3 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
+
   return (
     <div className="mt-6 flex flex-wrap items-center gap-3">
-      <input
-        type="search"
-        value={text}
-        onChange={(e) => handleTextChange(e.target.value)}
-        placeholder="নাম, কোম্পানি বা পদবি লিখুন..."
-        className="min-w-52 flex-1 rounded-xl border border-line bg-surface px-4 py-2.5 text-sm focus:border-sau focus:outline-none"
-      />
+      <div className="relative min-w-52 flex-1">
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
+        <input
+          type="search"
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          placeholder="নাম, কোম্পানি বা পদবি লিখুন..."
+          className="w-full rounded-xl border border-line bg-surface py-2.5 pl-10 pr-4 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10"
+        />
+      </div>
 
       <select
         value={faculty}
@@ -67,7 +74,7 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
           setFaculty(e.target.value);
           applyParams({ faculty: e.target.value || null });
         }}
-        className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm focus:border-sau focus:outline-none"
+        className={selectClass}
       >
         <option value="">সব ফ্যাকাল্টি</option>
         {faculties.map((f) => (
@@ -85,7 +92,7 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
           setCountry("");
           applyParams({ loc: v === "all" ? null : v, country: null });
         }}
-        className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm focus:border-sau focus:outline-none"
+        className={selectClass}
       >
         <option value="all">সবাই</option>
         <option value="bd">বাংলাদেশে</option>
@@ -99,7 +106,7 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
             setCountry(e.target.value);
             applyParams({ country: e.target.value || null });
           }}
-          className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm focus:border-sau focus:outline-none"
+          className={selectClass}
         >
           <option value="">সব দেশ</option>
           {countries.map((c) => (
@@ -113,9 +120,10 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
       {hasFilter && (
         <button
           onClick={handleReset}
-          className="rounded-xl px-3 py-2.5 text-sm font-medium text-ink/60 hover:text-ink"
+          className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-sm font-medium text-ink/50 transition-colors hover:bg-red-50/60 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
         >
-          ✕ ফিল্টার মুছুন
+          <X className="h-3.5 w-3.5" />
+          ফিল্টার মুছুন
         </button>
       )}
     </div>

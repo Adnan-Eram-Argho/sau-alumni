@@ -45,15 +45,15 @@ export default async function AdminPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="text-2xl font-bold sm:text-3xl">অ্যাডমিন প্যানেল</h1>
-      <p className="mt-1 text-ink/60">
+      <p className="mt-1 text-ink/50">
         মোট {list.length} জন সদস্য — প্রতিটা কাজ audit log-e লেখা হচ্ছে।
       </p>
 
       <Link
         href="/admin/queues"
-        className="mt-3 inline-block text-sm font-medium text-sau hover:underline dark:text-emerald-300"
+        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-sau transition-colors hover:underline dark:text-emerald-300"
       >
-        📋 অনুরোধ ও অভিযোগ queue →
+        অনুরোধ ও অভিযোগ queue →
       </Link>
 
       <AdminMemberList members={list} actorRole={actorRole} />

@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import ProfileEditForm, {
   type ProfileInitial,
 } from "@/components/ProfileEditForm";
+import AnimatedSection from "@/components/AnimatedSection";
 
 export const metadata = {
   title: "প্রোফাইল এডিট — SAU Alumni",
@@ -42,10 +43,12 @@ export default async function ProfileEditPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-bold sm:text-3xl">প্রোফাইল এডিট</h1>
-      <p className="mt-1 text-ink/60">
-        তথ্যগুলো ইংরেজিতে লিখবে — যেন বন্ধুরা সার্চে খুঁজে পায়।
-      </p>
+      <AnimatedSection>
+        <h1 className="text-2xl font-bold sm:text-3xl">প্রোফাইল এডিট</h1>
+        <p className="mt-1 text-ink/50">
+          তথ্যগুলো ইংরেজিতে লিখবে — যেন বন্ধুরা সার্চে খুঁজে পায়।
+        </p>
+      </AnimatedSection>
 
       <ProfileEditForm
         userId={user.id}

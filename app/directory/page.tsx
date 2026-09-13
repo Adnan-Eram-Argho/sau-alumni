@@ -5,6 +5,8 @@ import AlumniCard, {
   type ContactInfo,
 } from "@/components/AlumniCard";
 import DirectoryFilters from "@/components/DirectoryFilters";
+import AnimatedSection from "@/components/AnimatedSection";
+import { Users, SearchX, ArrowDown } from "lucide-react";
 
 const PAGE_SIZE = 24;
 
@@ -160,18 +162,20 @@ export default async function DirectoryPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div>
-        <h1 className="text-2xl font-bold sm:text-3xl">Alumni ডিরেক্টরি</h1>
-        <p className="mt-1 text-ink/60">
-          {q
-            ? `"${q}" — ${profiles.length} জন পাওয়া গেলো`
-            : loc === "bd"
-              ? "বাংলাদেশে থাকা SAU-র সদস্যরা"
-              : loc === "abroad"
-                ? "বিদেশে থাকা SAU-র সদস্যরা"
-                : "SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীরা"}
-        </p>
-      </div>
+      <AnimatedSection>
+        <div>
+          <h1 className="text-2xl font-bold sm:text-3xl">Alumni ডিরেক্টরি</h1>
+          <p className="mt-1 text-ink/50">
+            {q
+              ? `"${q}" — ${profiles.length} জন পাওয়া গেলো`
+              : loc === "bd"
+                ? "বাংলাদেশে থাকা SAU-র সদস্যরা"
+                : loc === "abroad"
+                  ? "বিদেশে থাকা SAU-র সদস্যরা"
+                  : "SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীরা"}
+          </p>
+        </div>
+      </AnimatedSection>
 
       <DirectoryFilters
         faculties={(faculties ?? []) as { id: string; name: string }[]}
@@ -179,32 +183,47 @@ export default async function DirectoryPage({
       />
 
       {queryError ? (
-        <p className="mt-10 rounded-xl border border-line bg-surface p-6 text-center text-ink/70">
-          ডেটা আনতে সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।
-        </p>
+        <AnimatedSection>
+          <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface p-10 text-center">
+            <SearchX className="h-10 w-10 text-ink/20" />
+            <p className="text-ink/60">
+              ডেটা আনতে সমস্যা হয়েছে। একটু পরে আবার চেষ্টা করুন।
+            </p>
+          </div>
+        </AnimatedSection>
       ) : profiles.length === 0 ? (
-        <p className="mt-10 rounded-xl border border-line bg-surface p-6 text-center text-ink/70">
-          {q
-            ? "এই নামে কাউকে খুঁজে পাওয়া যায়নি। বানানটা একবার দেখে নাও।"
-            : "এখনো কোনো public প্রোফাইল নেই। সবার আগে যোগ দিন!"}
-        </p>
+        <AnimatedSection>
+          <div className="mt-10 flex flex-col items-center gap-3 rounded-2xl border border-line bg-surface p-10 text-center">
+            <Users className="h-10 w-10 text-ink/20" />
+            <p className="text-ink/60">
+              {q
+                ? "এই নামে কাউকে খুঁজে পাওয়া যায়নি। বানানটা একবার দেখে নাও।"
+                : "এখনো কোনো public প্রোফাইল নেই। সবার আগে যোগ দিন!"}
+            </p>
+          </div>
+        </AnimatedSection>
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {profiles.map((p) => (
-            <AlumniCard key={p.id} profile={p} contact={contactMap[p.id]} />
+          {profiles.map((p, i) => (
+            <AnimatedSection key={p.id} delay={Math.min(i * 0.05, 0.4)}>
+              <AlumniCard profile={p} contact={contactMap[p.id]} />
+            </AnimatedSection>
           ))}
         </div>
       )}
 
       {hasMore && lastCreatedAt && (
-        <div className="mt-10 text-center">
-          <Link
-            href={pageUrl(lastCreatedAt)}
-            className="inline-block rounded-xl border border-line bg-surface px-6 py-2.5 font-medium hover:bg-base"
-          >
-            আরও দেখুন ↓
-          </Link>
-        </div>
+        <AnimatedSection>
+          <div className="mt-10 text-center">
+            <Link
+              href={pageUrl(lastCreatedAt)}
+              className="group inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-6 py-2.5 font-medium transition-all hover:border-sau/30 hover:bg-sau/5 hover:text-sau"
+            >
+              আরও দেখুন
+              <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
+            </Link>
+          </div>
+        </AnimatedSection>
       )}
     </div>
   );

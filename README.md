@@ -99,6 +99,10 @@ Design intent: **trust** (verification, audit log, trigger-guarded privileges) +
 | Markdown | react-markdown + rehype-sanitize | never `dangerouslySetInnerHTML` |
 | Validation | Zod | every form and every API route |
 | Country flags | flag-icons (SVG) | emoji flags break on Windows |
+| Icons | Lucide React (`lucide-react`) | Accessible, modern vector icons replacing emojis |
+| Motion & Animation | Framer Motion (`framer-motion`) | Page transitions, spring physics, drawer & card reveals |
+| Smooth Scrolling | Lenis (`lenis`) | Momentum inertial smooth scrolling (reduced-motion safe) |
+| 3D Graphics | Three.js + React Three Fiber (`three`, `@react-three/fiber`, `@react-three/drei`) | Botanical floating seed hero scene with device-aware CSS fallback |
 
 ---
 
@@ -147,9 +151,10 @@ Dev server notes:
 
 ```
 app/
-  layout.tsx                  root layout: Header, Footer, MadeByBadge, theme no-flash script, metadataBase, apple icon
-  globals.css                 Tailwind v4 theme tokens + @custom-variant dark
-  page.tsx                    landing page
+  layout.tsx                  root layout: Header, Footer, MadeByBadge, SmoothScroll, theme script
+  globals.css                 Tailwind v4 theme tokens, glassmorphism, skeleton shimmer keyframes
+  page.tsx                    landing page (3D botanical HeroScene, feature grid, stats)
+  loading.tsx                 global instant route-transition loading with botanical spinner
   manifest.ts                 PWA manifest (name, icons, theme_color #1e5c3a)
   sw.ts                       Serwist service worker (navigation-only offline fallback)
   sitemap.ts                  dynamic sitemap (public profiles, published notices, faculties)
@@ -157,21 +162,37 @@ app/
   offline/page.tsx            PWA offline fallback
 
   auth/
-    login/page.tsx            login (+ ?next= redirect support, open-redirect-safe)
-    signup/page.tsx           instant signup (see §10) — inserts profiles + profile_contacts
+    login/page.tsx            split-screen modern login with hero gradient panel
+    signup/page.tsx           split-screen instant signup
     callback/route.ts         auth code exchange (kept for future email-confirmation flows)
 
-  directory/page.tsx          public directory: search, filters, keyset pagination, contacts via VIEW
-  alumni/[id]/page.tsx        public profile: metadata, JSON-LD, avatar, markdown-free sections
-  notices/page.tsx            public notice list (pinned first, 30 latest)
-  notices/[slug]/page.tsx     notice detail: markdown+sanitize, image, draft preview (author only),
-                              mounts MarkNoticeRead
-  faculty/[slug]/page.tsx     faculty page with departments + member counts
-  about/page.tsx              about + credits
+  directory/
+    page.tsx                  public directory: search, filters, keyset pagination, contacts via VIEW
+    loading.tsx               directory skeleton: filter bar & alumni card grid
+
+  alumni/[id]/
+    page.tsx                  public profile: metadata, JSON-LD, avatar, contact cards
+    loading.tsx               alumni profile spotlight card skeleton
+
+  notices/
+    page.tsx                  public notice list (pinned first, 30 latest)
+    loading.tsx               notices list & pinned banner skeleton
+    [slug]/
+      page.tsx                notice detail: markdown+sanitize, image, draft preview
+      loading.tsx             notice reader & detail skeleton
+
+  faculty/[slug]/
+    page.tsx                  faculty page with departments + member counts
+    loading.tsx               faculty departments skeleton
+
+  about/page.tsx              about + vision + credits
+
+  privacy/page.tsx            গোপনীয়তা নীতি (privacy policy)
+  terms/page.tsx              শর্তাবলী (terms of service)
 
   dashboard/
-    page.tsx                  member home (redirect if not logged in; profile-missing banner;
-                              verification request card; role-based quick links)
+    page.tsx                  member home: status chips, profile-missing banner, quick actions
+    loading.tsx               dashboard overview & quick action cards skeleton
     profile/page.tsx          profile edit (fetches profile + departments)
     contact/page.tsx          phone visibility + public/private toggle
     notices/page.tsx          my notices (edit/delete drafts)
@@ -181,30 +202,36 @@ app/
 
   admin/
     page.tsx                  member management (admin+; requireAdmin)
+    loading.tsx               admin member list & queue skeleton
     queues/page.tsx           notices/verification/reports queues + audit log
 
   api/
     admin/route.ts            ALL privileged mutations (see §13)
     notices/route.ts          PATCH/DELETE own drafts (+ image cleanup on delete)
     delete-image/route.ts     server-side storage delete (service-role, own-file check)
+    health/route.ts           GET uptime check (DB ping — monitors er jonno)
 
 components/
-  Header.tsx                  nav, auth state, bell, toggle, mobile menu
-  Footer.tsx, MadeByBadge.tsx
-  ThemeToggle.tsx             dark/light, localStorage
-  NoticeBell.tsx              realtime unread count (unique channel name per mount)
+  Header.tsx                  nav, auth state, bell, toggle, animated mobile drawer
+  Footer.tsx, MadeByBadge.tsx rich 4-column footer, floating glass creator badge
+  ThemeToggle.tsx             dark/light, localStorage, spring motion
+  NoticeBell.tsx              realtime unread count + notification ping
   MarkNoticeRead.tsx          invisible marker on notice detail (inserts notice_reads)
-  AlumniCard.tsx              directory card (avatar/initials, flag, career line, contact line)
+  AlumniCard.tsx              directory card (avatar, verified badge, flag, career line, hover lift)
   CountryFlag.tsx             flag-icons wrapper (utils/countries code lookup)
-  DirectoryFilters.tsx        search (300ms debounce) + faculty + country selects
+  DirectoryFilters.tsx        search (300ms debounce) + faculty + country selects with icons
   NoticeForm.tsx              create/edit drafts, image upload + old-image cleanup
-  ProfileEditForm.tsx         full profile form incl. avatar + cleanup
-  ContactPrivacyForm.tsx      phone/email privacy
+  ProfileEditForm.tsx         full profile form incl. avatar + cleanup with glass cards
+  ContactPrivacyForm.tsx      phone/email privacy controls
   ImageUploader.tsx           generic uploader: bucket/maxSide/square props; resize, EXIF strip, WebP
   MyNoticesList.tsx           author's notice list (edit/delete)
-  AdminMemberList.tsx         member rows + action buttons (role-aware)
-  AdminQueues.tsx             queue sections + action buttons
-  VerificationRequestCard.tsx "verify me" request UI
+  AdminMemberList.tsx         member rows + action buttons with role badges & Lucide icons
+  AdminQueues.tsx             queue sections + action buttons with Lucide icons
+  VerificationRequestCard.tsx "verify me" request UI with Framer Motion transitions
+  HeroScene.tsx               interactive 3D Three.js/R3F botanical seed scene with mobile fallback
+  SmoothScroll.tsx            Lenis smooth scrolling provider
+  AnimatedSection.tsx         Framer Motion stagger animation container
+  Skeleton.tsx                reusable skeleton building blocks + page composite skeletons
 
 utils/
   supabase/server.ts          cookie-aware server client (await createClient())
@@ -475,12 +502,56 @@ Tokens in `app/globals.css` (Tailwind v4 `@theme inline`):
 | `ink` (text) | #20301f | #e7efe8 |
 | `line` (borders) | #e7e0cd | #2c382f |
 | `sau` (primary) | #1e5c3a (deep forest green) | same |
-| `sau-hover` | #174a2e | |
-| `gold` (accent) | #b45309 (harvest) | |
+| `sau-hover` | #174a2e | #1e5c3a |
+| `sau-light` | #2a7d52 | #3da87a |
+| `gold` (accent) | #b45309 (harvest) | #f59e0b |
+| `gold-light` | #d97706 | #fbbf24 |
 
-Dark mode: `@custom-variant dark` (class strategy), `ThemeToggle` persists to `localStorage("theme")`, an inline script in `layout.tsx` applies the class before paint (no flash), `<html suppressHydrationWarning>`. Accent colors for hero use built-in amber/emerald utilities.
+Dark mode: `@custom-variant dark` (class strategy), `ThemeToggle` persists to `localStorage("theme")`, an inline script in `layout.tsx` applies the class before paint (no flash), `<html suppressHydrationWarning>`.
 
-UI copy examples: buttons "সেভ করুন", "লগইন", "যোগ দিন — একদম ফ্রি"; labels note "(ইংরেজিতে লিখুন)" for English-content fields.
+### Modern Visual & UX Redesign Overhaul
+
+1. **Rich Agricultural Aesthetics**:
+   - Deep forest green (`#1e5c3a`), warm harvest gold (`#b45309`), and organic soil/cream backgrounds (`#faf6ea` / dark `#111814`).
+   - `.glass-card` and `.glass-navbar` with backdrop-blur, subtle ambient glow borders, and light background grain texture (`.bg-grain`).
+2. **Interactive 3D Hero Scene (`components/HeroScene.tsx`)**:
+   - Built using Three.js & React Three Fiber (`@react-three/fiber`, `@react-three/drei`).
+   - Features floating, organic botanical seed/leaf meshes with particle spore fields.
+   - Device-aware fallback: automatically detects mobile or low-spec hardware and renders lightweight CSS radial gradients.
+3. **Smooth Inertial Scrolling (`components/SmoothScroll.tsx`)**:
+   - Powered by Lenis for buttery-smooth desktop scrolling, strictly disabled when `prefers-reduced-motion` is active.
+4. **Fluid Motion & Micro-Interactions (`components/AnimatedSection.tsx`)**:
+   - Framer Motion stagger animations for headers, card grids, and mobile drawer transitions.
+5. **Icon System Modernization**:
+   - Completely phased out plain emojis in favor of crisp, accessible Lucide React icons (`lucide-react`) across Header, Directory, Cards, Notices, Auth, Forms, and Admin views.
+6. **Split-Screen Authentication Experience**:
+   - Modern split layouts for `/auth/login` and `/auth/signup` featuring gradient illustration sidebars and glass form cards.
+
+---
+
+### Loading Animations & Skeleton Body System
+
+To eliminate abrupt content popping and provide feedback during network latency and data fetching, the application implements a multi-tier loading architecture:
+
+1. **CSS Shimmer Engine (`app/globals.css`)**:
+   - Custom `.skeleton` utility utilizing `@keyframes skeleton-shimmer` with a 200% gradient sweep matching both light and dark mode tones.
+2. **Modular Skeleton Library (`components/Skeleton.tsx`)**:
+   - `Skeleton`: Atomic primitive for arbitrary shapes.
+   - `AlumniCardSkeleton`: Matches directory card dimensions (avatar, name, batch, designation, and tags).
+   - `DirectorySkeleton`: Full directory layout preview including filter bar and card grid.
+   - `ProfileSkeleton`: Profile spotlight hero, cover banner, bio, and contact information skeleton.
+   - `NoticeCardSkeleton` & `NoticeDetailSkeleton`: Pinned notice, post list, and article reader skeletons.
+   - `DashboardSkeleton`: User greeting, verification alert, and quick action cards preview.
+   - `FacultySkeleton` & `AdminSkeleton`: Department cards, metric chips, and administrative table row skeletons.
+3. **Route-Level Suspense Boundaries (`loading.tsx`)**:
+   - `app/loading.tsx`: Global instant route-transition loading with branded botanical spinner and pulsating message.
+   - `app/directory/loading.tsx`: Instant skeleton for public alumni directory.
+   - `app/alumni/[id]/loading.tsx`: Instant skeleton for profile view.
+   - `app/notices/loading.tsx`: Instant skeleton for the notice board.
+   - `app/notices/[slug]/loading.tsx`: Instant skeleton for notice detail reading.
+   - `app/dashboard/loading.tsx`: Instant skeleton for authenticated member dashboard.
+   - `app/faculty/[slug]/loading.tsx`: Instant skeleton for faculty department listings.
+   - `app/admin/loading.tsx`: Instant skeleton for the admin management console.
 
 ---
 

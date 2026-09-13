@@ -5,6 +5,16 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
 import NoticeBell from "@/components/NoticeBell";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Menu,
+  X,
+  Search,
+  Megaphone,
+  LayoutDashboard,
+  LogOut,
+  LogIn,
+} from "lucide-react";
 
 export default function Header() {
   const [email, setEmail] = useState<string | null>(null);
@@ -35,10 +45,10 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface/95 backdrop-blur">
+    <header className="sticky top-0 z-40 glass">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-bold">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-sm font-black text-white">
+        <Link href="/" className="group flex items-center gap-2.5 font-bold">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sau text-sm font-black text-white shadow-md transition-shadow group-hover:glow-green">
             SAU
           </span>
           <span className="text-sau dark:text-emerald-300">SAU Alumni</span>
@@ -46,10 +56,10 @@ export default function Header() {
 
         {/* Right: [desktop nav+auth] [bell] [theme] [mobile ☰] */}
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 sm:flex">
+          <div className="hidden items-center gap-1 sm:flex">
             <Link
               href="/directory"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-sau/5 hover:text-sau dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
             >
               ডিরেক্টরি
             </Link>
@@ -57,23 +67,24 @@ export default function Header() {
             {email && (
               <Link
                 href="/dashboard"
-                className="rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-base"
+                className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-sau/5 hover:text-sau dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
               >
                 ড্যাশবোর্ড
               </Link>
             )}
 
             {loading ? (
-              <div className="h-8 w-24 animate-pulse rounded bg-base" />
+              <div className="h-8 w-24 animate-pulse rounded-lg bg-line/50" />
             ) : email ? (
               <div className="flex items-center gap-2 text-sm">
-                <span className="hidden max-w-40 truncate text-ink/70 md:block">
+                <span className="hidden max-w-40 truncate text-ink/50 md:block">
                   {email}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+                  className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 font-medium transition-all hover:border-red-300 hover:bg-red-50/60 hover:text-red-600 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                 >
+                  <LogOut className="h-3.5 w-3.5" />
                   লগআউট
                 </button>
               </div>
@@ -81,13 +92,14 @@ export default function Header() {
               <div className="flex items-center gap-2 text-sm">
                 <Link
                   href="/auth/login"
-                  className="rounded-lg border border-line px-3 py-1.5 font-medium hover:bg-base"
+                  className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 font-medium transition-all hover:border-sau/30 hover:bg-sau/5 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10"
                 >
+                  <LogIn className="h-3.5 w-3.5" />
                   লগইন
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="rounded-lg bg-sau px-3 py-1.5 font-medium text-white hover:bg-sau-hover"
+                  className="btn-shimmer rounded-lg bg-sau px-3 py-1.5 font-medium text-white transition-colors hover:bg-sau-hover"
                 >
                   সাইন আপ
                 </Link>
@@ -102,70 +114,83 @@ export default function Header() {
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="মেনু"
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-lg sm:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-ink/70 transition-colors hover:bg-sau/5 hover:text-sau sm:hidden"
           >
-            {menuOpen ? "✕" : "☰"}
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
-      {menuOpen && (
-        <nav className="border-t border-line sm:hidden">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 text-sm">
-            <Link
-              href="/directory"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-2 font-medium hover:bg-base"
-            >
-              🔍 ডিরেক্টরি
-            </Link>
-            <Link
-              href="/notices"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-lg px-3 py-2 font-medium hover:bg-base"
-            >
-              📢 নোটিশ
-            </Link>
-            {email && (
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.nav
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden border-t border-line sm:hidden"
+          >
+            <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 text-sm">
               <Link
-                href="/dashboard"
+                href="/directory"
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2 font-medium hover:bg-base"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-medium transition-colors hover:bg-sau/5 hover:text-sau"
               >
-                🏠 ড্যাশবোর্ড
+                <Search className="h-4 w-4 text-sau/60" />
+                ডিরেক্টরি
               </Link>
-            )}
-
-            <div className="mt-1 border-t border-line pt-2">
-              {loading ? null : email ? (
-                <button
-                  onClick={handleLogout}
-                  className="w-full rounded-lg border border-line px-3 py-2 text-left font-medium hover:bg-base"
+              <Link
+                href="/notices"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-medium transition-colors hover:bg-sau/5 hover:text-sau"
+              >
+                <Megaphone className="h-4 w-4 text-sau/60" />
+                নোটিশ
+              </Link>
+              {email && (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 font-medium transition-colors hover:bg-sau/5 hover:text-sau"
                 >
-                  লগআউট
-                </button>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="rounded-lg border border-line px-3 py-2 font-medium hover:bg-base"
-                  >
-                    লগইন
-                  </Link>
-                  <Link
-                    href="/auth/signup"
-                    onClick={() => setMenuOpen(false)}
-                    className="rounded-lg bg-sau px-3 py-2 text-center font-medium text-white hover:bg-sau-hover"
-                  >
-                    সাইন আপ
-                  </Link>
-                </div>
+                  <LayoutDashboard className="h-4 w-4 text-sau/60" />
+                  ড্যাশবোর্ড
+                </Link>
               )}
+
+              <div className="mt-1 border-t border-line pt-2">
+                {loading ? null : email ? (
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left font-medium transition-colors hover:bg-red-50/60 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    লগআউট
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-2.5 rounded-lg border border-line px-3 py-2.5 font-medium transition-colors hover:bg-sau/5"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      লগইন
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      onClick={() => setMenuOpen(false)}
+                      className="btn-shimmer rounded-lg bg-sau px-3 py-2.5 text-center font-medium text-white hover:bg-sau-hover"
+                    >
+                      সাইন আপ
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </nav>
-      )}
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </header>
   );
 }

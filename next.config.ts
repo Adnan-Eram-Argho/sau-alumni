@@ -28,10 +28,11 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               // Supabase Storage-r public chobi
-              "img-src 'self' data:" +
+              "img-src 'self' data: blob:" +
                 (supabaseHost ? ` https://${supabaseHost}` : ""),
-              "script-src 'self' 'unsafe-inline'" + (isDev ? " 'unsafe-eval'" : ""),
+              "script-src 'self' 'unsafe-inline'" + (isDev ? " 'unsafe-eval' blob:" : " blob:"),
               "style-src 'self' 'unsafe-inline'",
+              "worker-src 'self' blob:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co" +
                 (isDev ? " ws://localhost:3000" : ""),
             ].join("; "),

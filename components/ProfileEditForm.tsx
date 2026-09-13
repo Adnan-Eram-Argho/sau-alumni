@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 import { COUNTRIES } from "@/utils/countries";
 import ImageUploader from "@/components/ImageUploader";
+import { X, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
 
 export type ProfileInitial = {
   id: string;
@@ -66,7 +67,7 @@ export default function ProfileEditForm({
   departments: { id: string; name: string; facultyName: string | null }[];
 }) {
   const inputClass =
-    "mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-sau focus:outline-none";
+    "mt-1 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     initial?.avatar_url ?? null
@@ -186,18 +187,18 @@ export default function ProfileEditForm({
   return (
     <form onSubmit={handleSave} className="mt-8 space-y-5">
       {/* প্রোফাইল ছবি */}
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-ink/60">প্রোফাইল ছবি</h2>
+      <div className="glass-card rounded-2xl p-5">
+        <h2 className="text-sm font-medium text-ink/50">প্রোফাইল ছবি</h2>
         <div className="mt-3 flex flex-wrap items-center gap-5">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarUrl}
               alt="Avatar"
-              className="h-20 w-20 rounded-full border-2 border-sau object-cover"
+              className="h-20 w-20 rounded-full object-cover ring-3 ring-sau/20"
             />
           ) : (
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-sau text-2xl font-bold text-white">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sau to-sau-hover text-2xl font-bold text-white">
               {avatarInitials}
             </div>
           )}
@@ -212,14 +213,15 @@ export default function ProfileEditForm({
               <button
                 type="button"
                 onClick={() => setAvatarUrl(null)}
-                className="mt-2 text-xs text-red-600 hover:underline"
+                className="mt-2 flex items-center gap-1 text-xs text-red-600 hover:underline dark:text-red-400"
               >
-                ✕ ছবি সরাও (সেভ করলে Storage থেকেও মুছে যাবে)
+                <X className="h-3 w-3" />
+                ছবি সরাও (সেভ করলে Storage থেকেও মুছে যাবে)
               </button>
             )}
           </div>
         </div>
-        <p className="mt-2 text-xs text-ink/50">
+        <p className="mt-2 text-xs text-ink/40">
           গোলাকারে দেখাতে square করে কেটে সেভ হয় (WebP)।
         </p>
       </div>
@@ -374,7 +376,7 @@ export default function ProfileEditForm({
         />
       </div>
 
-      <div className="rounded-2xl border border-line bg-surface p-5">
+      <div className="glass-card rounded-2xl p-5">
         <p className="text-sm font-medium">
           উচ্চশিক্ষা{" "}
           <span className="font-normal text-ink/40">
@@ -432,22 +434,29 @@ export default function ProfileEditForm({
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+        <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
-        </p>
+        </div>
       )}
       {success && (
-        <p className="rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-400">
-          ✓ সেভ হয়ে গেছে!
-        </p>
+        <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-400">
+          <CheckCircle className="h-4 w-4 shrink-0" />
+          সেভ হয়ে গেছে!
+        </div>
       )}
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-sau px-6 py-2.5 font-semibold text-white hover:bg-sau-hover disabled:opacity-50"
+          className="btn-shimmer flex items-center gap-2 rounded-xl bg-sau px-6 py-2.5 font-semibold text-white hover:bg-sau-hover disabled:opacity-50"
         >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
           {loading ? "সেভ হচ্ছে..." : "সেভ করুন"}
         </button>
       </div>

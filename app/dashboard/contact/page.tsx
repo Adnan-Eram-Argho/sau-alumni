@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import ContactPrivacyForm from "@/components/ContactPrivacyForm";
+import AnimatedSection from "@/components/AnimatedSection";
+import { AlertCircle } from "lucide-react";
 
 export const metadata = {
   title: "যোগাযোগ ও গোপনীয়তা — SAU Alumni",
@@ -28,16 +30,21 @@ export default async function ContactSettingsPage() {
   if (!profileRow) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="text-2xl font-bold">যোগাযোগ ও গোপনীয়তা</h1>
-        <div className="mt-6 rounded-2xl border border-amber-300/60 bg-amber-100/60 p-5 text-sm dark:border-amber-500/40 dark:bg-amber-500/10">
-          <p>এই সেটিংস ব্যবহার করতে আগে তোমার প্রোফাইল তৈরি করতে হবে।</p>
-          <Link
-            href="/dashboard/profile"
-            className="mt-2 inline-block font-semibold text-sau hover:underline dark:text-emerald-300"
-          >
-            প্রোফাইল তৈরি করুন →
-          </Link>
-        </div>
+        <AnimatedSection>
+          <h1 className="text-2xl font-bold sm:text-3xl">যোগাযোগ ও গোপনীয়তা</h1>
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 text-sm backdrop-blur-sm">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">এই সেটিংস ব্যবহার করতে আগে তোমার প্রোফাইল তৈরি করতে হবে।</p>
+              <Link
+                href="/dashboard/profile"
+                className="mt-2 inline-flex items-center gap-1 font-semibold text-sau hover:underline dark:text-emerald-400"
+              >
+                প্রোফাইল তৈরি করুন →
+              </Link>
+            </div>
+          </div>
+        </AnimatedSection>
       </div>
     );
   }
@@ -52,10 +59,12 @@ export default async function ContactSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="text-2xl font-bold sm:text-3xl">যোগাযোগ ও গোপনীয়তা</h1>
-      <p className="mt-1 text-ink/60">
-        কে তোমার কী দেখতে পাবে — নিয়ন্ত্রণ একদম তোমার হাতে।
-      </p>
+      <AnimatedSection>
+        <h1 className="text-2xl font-bold sm:text-3xl">যোগাযোগ ও গোপনীয়তা</h1>
+        <p className="mt-1 text-ink/50">
+          কে তোমার কী দেখতে পাবে — নিয়ন্ত্রণ একদম তোমার হাতে।
+        </p>
+      </AnimatedSection>
 
       <ContactPrivacyForm
         userId={user.id}

@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
+import { Lock, Users, Globe, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
 
 const contactSchema = z.object({
   phone_number: z
@@ -97,18 +98,18 @@ export default function ContactPrivacyForm({
   return (
     <form onSubmit={handleSave} className="mt-8 space-y-6">
       {/* Email */}
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-ink/60">ইমেইল</h2>
+      <div className="glass-card rounded-2xl p-5">
+        <h2 className="text-sm font-medium text-ink/50">ইমেইল</h2>
         <p className="mt-2 break-all text-sm">{email}</p>
-        <p className="mt-1 text-xs text-ink/50">
+        <p className="mt-1 text-xs text-ink/40">
           ডিজাইন অনুযায়ী ইমেইল সবার কাছে দেখাবে — alumni network-এর যোগাযোগের মূল
           দরজা এটাই।
         </p>
       </div>
 
       {/* Phone */}
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-ink/60">ফোন নম্বর</h2>
+      <div className="glass-card rounded-2xl p-5">
+        <h2 className="text-sm font-medium text-ink/50">ফোন নম্বর</h2>
         <input
           id="phone"
           type="text"
@@ -118,7 +119,7 @@ export default function ContactPrivacyForm({
             setSuccess(false);
           }}
           placeholder="e.g. +880 1XXX-XXXXXX"
-          className="mt-2 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-sau focus:outline-none"
+          className="mt-2 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10"
         />
 
         <p className="mt-4 text-sm font-medium">ফোন নম্বর দেখাবে কাকে?</p>
@@ -134,7 +135,8 @@ export default function ContactPrivacyForm({
               }}
               className="accent-sau"
             />
-            🔒 কারো না (শুধু আমি নিজে)
+            <Lock className="h-3.5 w-3.5 text-ink/40" />
+            কারো না (শুধু আমি নিজে)
           </label>
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
@@ -147,7 +149,8 @@ export default function ContactPrivacyForm({
               }}
               className="accent-sau"
             />
-            👥 শুধু লগইন-করা সদস্যরা
+            <Users className="h-3.5 w-3.5 text-ink/40" />
+            শুধু লগইন-করা সদস্যরা
           </label>
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
@@ -160,14 +163,15 @@ export default function ContactPrivacyForm({
               }}
               className="accent-sau"
             />
-            🌍 সবাই
+            <Globe className="h-3.5 w-3.5 text-ink/40" />
+            সবাই
           </label>
         </div>
       </div>
 
       {/* Profile visibility */}
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <h2 className="text-sm font-medium text-ink/60">প্রোফাইল</h2>
+      <div className="glass-card rounded-2xl p-5">
+        <h2 className="text-sm font-medium text-ink/50">প্রোফাইল</h2>
         <div className="mt-2 space-y-2 text-sm">
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
@@ -180,7 +184,8 @@ export default function ContactPrivacyForm({
               }}
               className="accent-sau"
             />
-            🌍 Public — directory-তে সবাই আমাকে খুঁজে পাবে
+            <Globe className="h-3.5 w-3.5 text-ink/40" />
+            Public — directory-তে সবাই আমাকে খুঁজে পাবে
           </label>
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
@@ -193,33 +198,41 @@ export default function ContactPrivacyForm({
               }}
               className="accent-sau"
             />
-            🔒 Private — শুধু আমি নিজে দেখব
+            <Lock className="h-3.5 w-3.5 text-ink/40" />
+            Private — শুধু আমি নিজে দেখব
           </label>
         </div>
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+        <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
-        </p>
+        </div>
       )}
       {success && (
-        <p className="rounded-lg bg-green-50 p-3 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-400">
-          ✓ সেভ হয়ে গেছে!
-        </p>
+        <div className="flex items-center gap-2 rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-500/10 dark:text-green-400">
+          <CheckCircle className="h-4 w-4 shrink-0" />
+          সেভ হয়ে গেছে!
+        </div>
       )}
 
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-sau px-6 py-2.5 font-semibold text-white hover:bg-sau-hover disabled:opacity-50"
+          className="btn-shimmer flex items-center gap-2 rounded-xl bg-sau px-6 py-2.5 font-semibold text-white hover:bg-sau-hover disabled:opacity-50"
         >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4" />
+          )}
           {loading ? "সেভ হচ্ছে..." : "সেভ করুন"}
         </button>
         <Link
           href="/dashboard"
-          className="text-sm font-medium text-ink/60 hover:text-ink"
+          className="text-sm font-medium text-ink/50 transition-colors hover:text-ink"
         >
           ড্যাশবোর্ডে ফিরুন
         </Link>
