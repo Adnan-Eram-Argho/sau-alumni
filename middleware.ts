@@ -7,7 +7,9 @@ export async function middleware(request: NextRequest) {
 
   // ---- Rate limit: login/signup page ----
   const isAuthPage =
-    pathname.startsWith("/auth/login") || pathname.startsWith("/auth/signup");
+    pathname.startsWith("/auth/login") ||
+    pathname.startsWith("/auth/signup") ||
+    pathname.startsWith("/auth/forgot-password");
 
   if (isAuthPage && authPagesLimiter) {
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
