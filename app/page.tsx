@@ -32,6 +32,62 @@ const features = [
   },
 ];
 
+// Homepage-r JSON-LD — Google-ke bolche ei site ta ki, Organization + search
+const homepageJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://sau-alumni.vercel.app/#organization",
+      name: "SAU Alumni Network",
+      alternateName: "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় এলামনাই নেটওয়ার্ক",
+      url: "https://sau-alumni.vercel.app",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://sau-alumni.vercel.app/icons/icon-512.png",
+        width: 512,
+        height: 512,
+      },
+      description:
+        "Sher-e-Bangla Agricultural University (SAU) alumni and current student network — search by name, batch, department, or country.",
+      foundingDate: "2025",
+      sameAs: [
+        "https://github.com/Adnan-Eram-Argho",
+        "https://www.linkedin.com/in/md-adnan-eram-argho/",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://sau-alumni.vercel.app/#website",
+      url: "https://sau-alumni.vercel.app",
+      name: "SAU Alumni Network",
+      alternateName: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+      publisher: { "@id": "https://sau-alumni.vercel.app/#organization" },
+      inLanguage: "bn",
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate:
+            "https://sau-alumni.vercel.app/directory?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://sau-alumni.vercel.app/#webpage",
+      url: "https://sau-alumni.vercel.app",
+      name: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+      isPartOf: { "@id": "https://sau-alumni.vercel.app/#website" },
+      about: { "@id": "https://sau-alumni.vercel.app/#organization" },
+      description:
+        "Connect with alumni and current students of Sher-e-Bangla Agricultural University (SAU), Dhaka. Search by name, batch, department, or country — find your batchmates across the world.",
+      inLanguage: "bn",
+    },
+  ],
+};
+
 export default async function HomePage() {
   // Admin carousel chobi ache kina?
   const supabase = await createClient();
@@ -47,7 +103,12 @@ export default async function HomePage() {
   }));
 
   return (
-    <div>
+    <main>
+      {/* Homepage Structured Data — Organization + WebSite + SearchAction */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }}
+      />
       {/* HERO — chobi thakle carousel, na thakle 3D design */}
       {slides.length > 0 ? (
         <HeroCarousel slides={slides} />
@@ -161,6 +222,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

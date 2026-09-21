@@ -15,13 +15,23 @@ const hindSiliguri = Hind_Siliguri({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sau-alumni.vercel.app"),
-  title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+  title: {
+    default: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় এলামনাই নেটওয়ার্ক",
+    template: "%s — SAU Alumni",
+  },
   description:
-    "Connect with alumni and current students of Sher-e-Bangla Agricultural University (SAU), Dhaka. Search by name, batch, department, or country — find your batchmates across the world.",
+    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের ডিরেক্টরি। নাম, ব্যাচ, বিভাগ বা দেশ দিয়ে সার্চ করে খুঁজে নাও তোমার ব্যাচমেটদের। Connect with SAU alumni and students worldwide.",
   keywords: [
     "SAU",
+    "SAU alumni",
     "Sher-e-Bangla Agricultural University",
     "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+    "শেকৃবি",
+    "SAU ডিরেক্টরি",
+    "SAU alumni directory",
+    "কৃষি বিশ্ববিদ্যালয় alumni",
+    "SAU batchmate",
+    "SAU alumni network",
     "alumni",
     "alumni network",
     "Dhaka",
@@ -29,7 +39,14 @@ export const metadata: Metadata = {
     "agricultural university",
     "batchmate",
     "directory",
+    "শেরে-বাংলা নগর",
+    "SAU Dhaka",
+    "কৃষি বিশ্ববিদ্যালয়",
   ],
+  category: "education",
+  alternates: {
+    canonical: "https://sau-alumni.vercel.app",
+  },
   authors: [{ name: "Adnan Eram Argho" }],
   creator: "Adnan Eram Argho",
   icons: {
@@ -41,28 +58,28 @@ export const metadata: Metadata = {
     apple: "/icons/apple-touch-icon.png",
   },
   openGraph: {
-    title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
+    title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় এলামনাই নেটওয়ার্ক",
     description:
-      "Connect with alumni and current students of Sher-e-Bangla Agricultural University. Search by name, batch, department, or country.",
+      "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের ডিরেক্টরি ও নেটওয়ার্ক। নাম, ব্যাচ, বিভাগ বা দেশ দিয়ে সার্চ করে ব্যাচমেটদের খুঁজে নাও।",
     siteName: "SAU Alumni Network",
     type: "website",
     locale: "bn_BD",
     url: "https://sau-alumni.vercel.app",
     images: [
       {
-        url: "/icons/icon-512.png",
-        width: 512,
-        height: 512,
-        alt: "SAU Alumni Network",
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "SAU Alumni Network — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় এলামনাই নেটওয়ার্ক",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়",
     description:
-      "Connect with alumni and current students of Sher-e-Bangla Agricultural University. Find your batchmates across the world.",
-    images: ["/icons/icon-512.png"],
+      "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়ের প্রাক্তন ও বর্তমান শিক্ষার্থীদের নেটওয়ার্ক। সারা পৃথিবীতে ব্যাচমেটদের খুঁজে নাও।",
+    images: ["/og-image.png"],
   },
   verification: {
     google: "DkJs8EUim9VsvxeFGZcqVDGc-1k9hApjEqNAuFsapyw",

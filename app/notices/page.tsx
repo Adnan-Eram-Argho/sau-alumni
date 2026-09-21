@@ -4,9 +4,12 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { Pin, FileText } from "lucide-react";
 
 export const metadata = {
-  title: "নোটিশ বোর্ড — SAU Alumni",
+  title: "নোটিশ বোর্ড",
   description:
-    "Sher-e-Bangla Agricultural University Alumni Network-er sob dekha-shona — event, update, announcement.",
+    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU) Alumni Network-এর সব নোটিশ, ইভেন্ট, ঘোষণা ও আপডেট। SAU notices, events, and announcements.",
+  alternates: {
+    canonical: "https://sau-alumni.vercel.app/notices",
+  },
 };
 
 export default async function NoticesPage() {

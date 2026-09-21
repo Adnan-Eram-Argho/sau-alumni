@@ -25,10 +25,16 @@ export async function generateMetadata({
     .eq("slug", slug)
     .maybeSingle();
 
+  if (!data) {
+    return { title: "ফ্যাকাল্টি পাওয়া যায়নি" };
+  }
+
   return {
-    title: data
-      ? `${data.name} — SAU Alumni`
-      : "ফ্যাকাল্টি পাওয়া যায়নি — SAU Alumni",
+    title: `${data.name}`,
+    description: `${data.name} — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-এর এই ফ্যাকাল্টির সব বিভাগ ও সদস্যদের তালিকা দেখুন। SAU Alumni Network-এ সংযুক্ত হোন।`,
+    alternates: {
+      canonical: `https://sau-alumni.vercel.app/faculty/${slug}`,
+    },
   };
 }
 

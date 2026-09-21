@@ -63,7 +63,7 @@ export async function generateMetadata({
 
   const { data } = await supabase
     .from("profiles")
-    .select("full_name, bio, is_public, deleted_at")
+    .select("full_name, bio, is_public, deleted_at, current_designation, current_company, avatar_url")
     .eq("id", id)
     .maybeSingle();
 
@@ -72,19 +72,37 @@ export async function generateMetadata({
     bio: string | null;
     is_public: boolean | null;
     deleted_at: string | null;
+    current_designation: string | null;
+    current_company: string | null;
+    avatar_url: string | null;
   } | null;
 
   if (!profile || !profile.is_public || profile.deleted_at) {
-    return { title: "প্রোফাইল পাওয়া যায়নি — SAU Alumni" };
+    return { title: "প্রোফাইল পাওয়া যায়নি" };
   }
 
   const description =
     profile.bio?.slice(0, 150) ??
-    `${profile.full_name} — Sher-e-Bangla Agricultural University alumni.`;
+    [profile.full_name, profile.current_designation, profile.current_company]
+      .filter(Boolean)
+      .join(" — ") +
+      " — Sher-e-Bangla Agricultural University (SAU) alumni.";
 
   return {
-    title: `${profile.full_name} — SAU Alumni`,
+    title: `${profile.full_name}`,
     description,
+    alternates: {
+      canonical: `https://sau-alumni.vercel.app/alumni/${id}`,
+    },
+    openGraph: {
+      title: `${profile.full_name} — SAU Alumni`,
+      description,
+      type: "profile",
+      url: `https://sau-alumni.vercel.app/alumni/${id}`,
+      ...(profile.avatar_url
+        ? { images: [{ url: profile.avatar_url, width: 400, height: 400, alt: profile.full_name }] }
+        : {}),
+    },
   };
 }
 
@@ -156,16 +174,46 @@ export default async function ProfilePage({
     mainEntity: {
       "@type": "Person",
       name: p.full_name,
+      url: `https://sau-alumni.vercel.app/alumni/${p.id}`,
+      ...(p.avatar_url ? { image: p.avatar_url } : {}),
       alumniOf: {
         "@type": "CollegeOrUniversity",
         name: "Sher-e-Bangla Agricultural University",
+        sameAs: "https://sau.edu.bd",
       },
       ...(p.current_designation ? { jobTitle: p.current_designation } : {}),
       ...(p.current_company
         ? { worksFor: { "@type": "Organization", name: p.current_company } }
         : {}),
       ...(c?.email ? { email: c.email } : {}),
+      ...(p.current_country ? { nationality: p.current_country } : {}),
     },
+  };
+
+  // Breadcrumb — Google search e "SAU Alumni > Directory > Name" dekhabe
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "হোম",
+        item: "https://sau-alumni.vercel.app",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "ডিরেক্টরি",
+        item: "https://sau-alumni.vercel.app/directory",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: p.full_name,
+        item: `https://sau-alumni.vercel.app/alumni/${p.id}`,
+      },
+    ],
   };
 
   return (
@@ -173,6 +221,10 @@ export default async function ProfilePage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <AnimatedSection>

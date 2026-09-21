@@ -39,9 +39,12 @@ function LinkedinIcon({ className }: { className?: string }) {
 }
 
 export const metadata = {
-  title: "আমাদের সম্পর্কে — SAU Alumni",
+  title: "আমাদের সম্পর্কে",
   description:
-    "SAU Alumni Network — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়ের প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের সংযোগস্থল। এক ক্যাম্পাসের মানুষ, সারা পৃথিবীতে।",
+    "SAU Alumni Network — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়ের প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের সংযোগস্থল। এক ক্যাম্পাসের মানুষ, সারা পৃথিবীতে ছড়িয়ে — এবার এক জায়গায়।",
+  alternates: {
+    canonical: "https://sau-alumni.vercel.app/about",
+  },
 };
 
 
@@ -84,9 +87,30 @@ const PROJECTS = [
   },
 ];
 
+// SAU organization structured data — about page-e ekhane relevant
+const aboutPageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  name: "Sher-e-Bangla Agricultural University",
+  alternateName: ["শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়", "SAU", "শেকৃবি"],
+  url: "https://sau.edu.bd",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Sher-e-Bangla Nagar, Dhaka",
+    addressCountry: "BD",
+  },
+  description:
+    "বাংলাদেশের কৃষি শিক্ষা ও গবেষণার অন্যতম প্রধান প্রতিষ্ঠান। মূলমন্ত্র: গবেষণা · শিক্ষা · সম্প্রসারণ।",
+};
+
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      {/* About page structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageJsonLd) }}
+      />
       <AnimatedSection>
         <h1 className="text-2xl font-bold sm:text-3xl">আমাদের সম্পর্কে</h1>
         <p className="mt-1 text-ink/50">

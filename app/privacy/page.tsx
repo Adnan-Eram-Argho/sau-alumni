@@ -1,5 +1,9 @@
 export const metadata = {
-    title: "গোপনীয়তা নীতি — SAU Alumni",
+    title: "গোপনীয়তা নীতি",
+    description: "SAU Alumni Network-এ তোমার তথ্য কীভাবে সংগ্রহ ও ব্যবহৃত হয় — সহজ ভাষায়। Privacy policy for SAU Alumni Network.",
+    alternates: {
+        canonical: "https://sau-alumni.vercel.app/privacy",
+    },
 };
 
 const sections = [

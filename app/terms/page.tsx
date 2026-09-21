@@ -1,5 +1,9 @@
 export const metadata = {
-    title: "শর্তাবলী — SAU Alumni",
+    title: "শর্তাবলী",
+    description: "SAU Alumni Network প্ল্যাটফর্ম ব্যবহারের সহজ নিয়মগুলো। Terms of service for SAU Alumni Network.",
+    alternates: {
+        canonical: "https://sau-alumni.vercel.app/terms",
+    },
 };
 
 const sections = [

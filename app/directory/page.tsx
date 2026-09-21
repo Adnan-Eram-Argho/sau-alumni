@@ -14,9 +14,12 @@ const PAGE_SIZE = 24;
 type DirectoryProfile = AlumniCardData & { created_at: string };
 
 export const metadata = {
-  title: "Alumni ডিরেক্টরি — SAU Alumni",
+  title: "Alumni ডিরেক্টরি",
   description:
-    "Sher-e-Bangla Agricultural University-er sob alumni ar current student-der khunje dekho — department, batch, desh onujayi.",
+    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-এর সব alumni ও বর্তমান শিক্ষার্থীদের ডিরেক্টরি। নাম, ব্যাচ, বিভাগ, দেশ অনুযায়ী সার্চ করুন। SAU Alumni Directory — find batchmates by name, batch, department, or country.",
+  alternates: {
+    canonical: "https://sau-alumni.vercel.app/directory",
+  },
 };
 
 export default async function DirectoryPage({

@@ -32,23 +32,35 @@ export async function generateMetadata({
 
   const { data } = await supabase
     .from("notices")
-    .select("title, content, status")
+    .select("title, content, status, image_url")
     .eq("slug", slug)
     .maybeSingle();
 
   if (!data || data.status !== "published") {
-    return { title: "নোটিশ পাওয়া যায়নি — SAU Alumni" };
+    return { title: "নোটিশ পাওয়া যায়নি" };
   }
 
   const description =
     (data.content ?? "")
       .replace(/[#*`[\]]/g, " ")
-      .slice(0, 150)
-      .trim() || "SAU Alumni notice.";
+      .slice(0, 155)
+      .trim() || `${data.title} — SAU Alumni Network নোটিশ।`;
 
   return {
-    title: `${data.title} — SAU Alumni`,
+    title: `${data.title}`,
     description,
+    alternates: {
+      canonical: `https://sau-alumni.vercel.app/notices/${slug}`,
+    },
+    openGraph: {
+      title: `${data.title} — SAU Alumni`,
+      description,
+      type: "article",
+      url: `https://sau-alumni.vercel.app/notices/${slug}`,
+      ...(data.image_url
+        ? { images: [{ url: data.image_url, alt: data.title }] }
+        : {}),
+    },
   };
 }
 
@@ -79,10 +91,70 @@ export default async function NoticeDetailPage({
 
   const isPreview = notice.status !== "published";
 
+  // Article JSON-LD — Google ke bolche ei ekta article/notice
+  const articleLd = !isPreview
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: notice.title,
+        datePublished: notice.publish_at ?? notice.created_at,
+        ...(notice.image_url ? { image: notice.image_url } : {}),
+        author: {
+          "@type": "Person",
+          name: notice.profiles?.full_name ?? "SAU Alumni",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "SAU Alumni Network",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://sau-alumni.vercel.app/icons/icon-512.png",
+          },
+        },
+      }
+    : null;
+
+  // Breadcrumb — Google search e "SAU Alumni > নোটিশ > Title" dekhabe
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "হোম",
+        item: "https://sau-alumni.vercel.app",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "নোটিশ বোর্ড",
+        item: "https://sau-alumni.vercel.app/notices",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: notice.title,
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       {/* Pora hoye gelo — mark (khali published hole) */}
       {!isPreview && <MarkNoticeRead noticeId={notice.id} />}
+
+      {/* Structured Data — Article + Breadcrumb */}
+      {articleLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
+        />
+      )}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
 
       <AnimatedSection>
         <Link
