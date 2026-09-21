@@ -64,8 +64,8 @@ Analytics: **Vercel Analytics** (`@vercel/analytics/next`) is integrated in the 
 ## 2. Feature Map
 
 **Public (no login):**
-- Landing page (SAU green/gold theme, dark/light toggle)
-- Alumni directory: full-text search (`search_vector`) with partial/typo-tolerant name fallback (trigram), faculty filter, country filter (সবাই/বাংলাদেশে/বিদেশে + specific country), keyset pagination (24/page)
+- Landing page (hero: admin-managed image carousel when set, else 3D botanical scene; SAU green/gold theme, dark/light toggle)
+- Alumni directory: full-text + partial-name search, **batch filter (2001 → current year + 1)**, country filter, keyset pagination (24/page)
 - Public profile pages: unique `<title>`/description per profile, JSON-LD `ProfilePage/Person`, private profiles → 404
 - Notice board: list (pinned first) + detail pages (markdown via react-markdown + rehype-sanitize, images), draft preview for the author only
 - Faculty pages, About page, floating "Made by" badge
@@ -82,6 +82,7 @@ Analytics: **Vercel Analytics** (`@vercel/analytics/next`) is integrated in the 
 
 **Admins (`/admin`):**
 - Member list: verify/unverify, promote contributor, make/remove admin (super-admin only), suspend/restore
+- Homepage carousel management (upload/remove images; empty → default hero)
 - Queues (`/admin/queues`): notice drafts (publish/delete), published/archived notices (pin/archive/unpublish/re-publish), verification requests (approve/reject), reports (reviewed/dismiss), audit log (last 50; super-admin sees all, admin sees own)
 - Every mutation is Zod-validated, service-role, and audit-logged
 
@@ -156,7 +157,7 @@ Dev server notes:
 app/
   layout.tsx                  root layout: Header, Footer, MadeByBadge, SmoothScroll, theme script
   globals.css                 Tailwind v4 theme tokens, glassmorphism, skeleton shimmer keyframes
-  page.tsx                    landing page (3D botanical HeroScene, feature grid, stats)
+  page.tsx                    landing — hero: admin carousel images if any, else 3D HeroScene
   loading.tsx                 global instant route-transition loading with botanical spinner
   manifest.ts                 PWA manifest (name, icons, theme_color #1e5c3a)
   sw.ts                       Serwist service worker (navigation-only offline fallback)
@@ -206,7 +207,7 @@ app/
     upload-test/page.tsx      manual image-upload test page
 
   admin/
-    page.tsx                  member management (admin+; requireAdmin)
+    page.tsx                  member management + homepage carousel manager (admin+; requireAdmin)
     loading.tsx               admin member list & queue skeleton
     queues/page.tsx           notices/verification/reports queues + audit log
 
@@ -233,6 +234,8 @@ components/
   AdminMemberList.tsx         member rows + action buttons with role badges & Lucide icons
   AdminQueues.tsx             queue sections + action buttons with Lucide icons
   VerificationRequestCard.tsx "verify me" request UI with Framer Motion transitions
+  HeroCarousel.tsx            homepage hero carousel (auto-slide, arrows, dots; overlay text+CTA)
+  HomepageImageManager.tsx    admin UI: add/remove carousel images (upload + storage cleanup)
   HeroScene.tsx               interactive 3D Three.js/R3F botanical seed scene with mobile fallback
   SmoothScroll.tsx            Lenis smooth scrolling provider
   AnimatedSection.tsx         Framer Motion stagger animation container
@@ -245,6 +248,7 @@ utils/
   service-client.ts           service-role client factory — SERVER ONLY
   rate-limit.ts               Upstash limiter (undefined-safe)
   countries.ts                fixed country list (name + ISO code)
+  batch.ts                    batch year list — 2001 to (current year + 1), AUTO-computed
 
 supabase/migrations/          FULL schema history — source of truth, run in order
 middleware.ts                 session refresh, /dashboard+/admin login gate, auth-page rate limit
@@ -314,6 +318,10 @@ Runs with **owner privileges (no security_invoker — deliberate, see §24)** so
 ### notice_reads
 `user_id`+`notice_id` PK (both CASCADE) · `read_at` — powers the unread bell.
 
+### homepage_images (admin-managed hero carousel)
+`id` uuid PK · `image_url` text NOT NULL · `sort_order` int · `created_by` → profiles (SET NULL) · `created_at`
+Public read (`USING true`); admin INSERT policy (role in admin/super_admin, not suspended); deletions go through `/api/admin` `delete_homepage_image` (row + Storage file + audit). Empty table → homepage falls back to the default 3D hero design.
+
 ### jobs (built, no UI yet — monetization-ready)
 `id` · `posted_by` · `target_faculty_id` · `title` · `company_name` · `location` · `job_type` · `application_url_or_email` · `description` · `status` (`pending`/`active`/`archived`) · `is_featured` · `featured_until` · `created_at`
 
@@ -369,6 +377,7 @@ Storage RLS in §9.
 |---|---|---|---|---|---|
 | `notice-images` | yes | 5MB | jpeg/png/webp (SVG blocked — XSS) | contributor/admin/super_admin | `<userId>/<timestamp>-<rand>.<ext>` |
 | `avatars` | yes | 2MB | same | any authenticated user | same |
+| `homepage-images` | yes | 5MB | same | admin/super_admin | same (1920px, WebP q90 via ImageUploader maxSide) |
 
 Storage policies (on `storage.objects`):
 - `notice_images_upload` — insert to authenticated where role in (contributor, admin, super_admin) AND folder[1]=auth.uid()
@@ -443,7 +452,7 @@ Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (
 
 ### `POST /api/admin` — all privileged mutations
 Request: `{ action: string, target_id: uuid, value?: boolean }` — requires admin or super_admin session.
-Actions: `set_verified`, `make_contributor`, `make_alumni`, `make_admin`, `demote_admin`, `suspend`, `restore`, `approve_verification`, `reject_verification`, `review_report`, `dismiss_report`, `publish_notice`, `unpublish_notice`, `pin_notice`, `archive_notice`, `unarchive_notice`, `delete_notice` (drafts only; also removes its image).
+Actions: `set_verified`, `make_contributor`, `make_alumni`, `make_admin`, `demote_admin`, `suspend`, `restore`, `approve_verification`, `reject_verification`, `review_report`, `dismiss_report`, `publish_notice`, `unpublish_notice`, `pin_notice`, `archive_notice`, `unarchive_notice`, `delete_notice` (drafts only; also removes its image), `delete_homepage_image` (row + Storage cleanup + audit).
 Guards: permanent/super-admin rows untouchable; admin rows only by super-admin; status transitions validated (publish requires draft, etc.). Every action → `writeAudit`.
 Responses: `{ok:true}` / 4xx with `{error: "..."}`.
 
@@ -486,7 +495,7 @@ Exchanges the `code` query param for a session; if the user has no `profiles` ro
 | `/dashboard/contact` | login | phone visibility + is_public |
 | `/dashboard/notices` (+`/new`, `/[id]/edit`) | login (contributor+ for write) | drafts management |
 | `/dashboard/upload-test` | login | manual image-upload test page (dev utility) |
-| `/admin` | admin+ | member management |
+| `/admin` | admin+ | member management + homepage carousel manager |
 | `/admin/queues` | admin+ | notices/verification/reports + audit |
 | `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest`, `/sw.js` | public | generated |
 
@@ -607,6 +616,8 @@ To eliminate abrupt content popping and provide feedback during network latency 
 13. **Contact info must be read through the `public_contact_info` VIEW**, never `profile_contacts`.
 14. **Signup is instant** (no email confirmation) and inserts two rows client-side (`profiles`, `profile_contacts`); the dashboard self-heals a missing row.
 15. **The contact VIEW intentionally has no `security_invoker`** — see §24; adding it back will blank everyone's email in the directory.
+16. **Batch years are auto-computed** — `utils/batch.ts` derives 2001 → `currentYear + 1`. No DB table, no admin UI; a new year appears automatically. Don't "fix" this into a database table.
+17. **Password reset emails are rate-limited hard** (~2-3/hour on free tier by default) — repeated testing silently fails as "CORS did not succeed" `NetworkError`. Raise the limit in Supabase (Auth → Email rate limit, e.g. 30/hour) and test sparingly. The reset link must be opened in the **SAME browser** (PKCE) — other browsers get the friendly "link expired" screen.
 
 ---
 
@@ -683,12 +694,18 @@ Transparency for future maintainers — each was a deliberate, tested decision:
 4. **Trigger softened for self-edit** — the permanent super-admin can edit their own non-privileged profile fields (spec's original trigger blocked all updates, contradicting the role matrix). Privilege fields remain frozen; audit-logged admin API remains the only path for role changes.
 5. **`country-list` npm → custom `utils/countries.ts`** — one source for dropdown + flag codes, fewer dependencies.
 6. **CSP `script-src 'unsafe-inline'`** — required by Next.js App Router inline hydration scripts; XSS defense shifted to sanitized markdown + escaped React rendering.
+7. **Batch filter replaces faculty filter in the directory** — pilot runs a single faculty (Agribusiness Management), so a faculty dropdown was noise. The `?faculty=` URL param still works (faculty pages link to it); restore the dropdown when more faculties are added.
+8. **No admin UI for batch management** — batches are years, so they're computed (see §19 #16) instead of stored/managed. No wrong-add/remove risk exists by design.
 
 ---
 
 ## 25. Roadmap / Upgrade Ideas
 
-Near-term: faculty/department management UI (super-admin), scheduled notice publishing (`publish_at` + Vercel cron — 2 jobs on Hobby), weekly email digest (Resend free tier + SPF/DKIM on a subdomain), job board UI (`jobs` table ready), invite-token signup gating (`invites` table ready), account self-deletion, Cloudflare Turnstile on signup, Sentry, custom domain.
+Near-term: faculty/department management UI (super-admin), restore faculty dropdown in directory filters (when >1 faculty goes live), scheduled notice publishing (`publish_at` + Vercel cron — 2 jobs on Hobby), weekly email digest (Resend free tier + SPF/DKIM on a subdomain), job board UI (`jobs` table ready), invite-token signup gating (`invites` table ready), account self-deletion, Cloudflare Turnstile on signup, Sentry, custom domain.
+
+Pending decisions:
+- Suspend → login-block (middleware) — decision pending
+- Permanent account delete (super_admin-only; extend to admins?) — decision pending
 
 Later: events + RSVP, mentorship opt-in, web push, "claim your profile" pre-seeding, alumni stats widgets, R2 migration.
 
