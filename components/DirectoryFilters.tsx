@@ -3,13 +3,13 @@
 import { useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
+import { BATCH_YEARS } from "@/utils/batch";
 
 type Props = {
-  faculties: { id: string; name: string }[];
   countries: string[];
 };
 
-export default function DirectoryFilters({ faculties, countries }: Props) {
+export default function DirectoryFilters({ countries }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -17,7 +17,7 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
   const [text, setText] = useState(searchParams.get("q") ?? "");
   const [loc, setLoc] = useState(searchParams.get("loc") ?? "all");
   const [country, setCountry] = useState(searchParams.get("country") ?? "");
-  const [faculty, setFaculty] = useState(searchParams.get("faculty") ?? "");
+  const [batch, setBatch] = useState(searchParams.get("batch") ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // URL-e param boshiye server ke abar data ane
@@ -46,11 +46,11 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
     setText("");
     setLoc("all");
     setCountry("");
-    setFaculty("");
+    setBatch("");
     router.replace(pathname);
   }
 
-  const hasFilter = text || loc !== "all" || country || faculty;
+  const hasFilter = text || loc !== "all" || country || batch;
 
   const selectClass =
     "rounded-xl border border-line bg-surface px-3 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
@@ -69,17 +69,17 @@ export default function DirectoryFilters({ faculties, countries }: Props) {
       </div>
 
       <select
-        value={faculty}
+        value={batch}
         onChange={(e) => {
-          setFaculty(e.target.value);
-          applyParams({ faculty: e.target.value || null });
+          setBatch(e.target.value);
+          applyParams({ batch: e.target.value || null });
         }}
         className={selectClass}
       >
-        <option value="">সব ফ্যাকাল্টি</option>
-        {faculties.map((f) => (
-          <option key={f.id} value={f.id}>
-            {f.name}
+        <option value="">সব ব্যাচ</option>
+        {BATCH_YEARS.map((y) => (
+          <option key={y} value={y}>
+            ব্যাচ {y}
           </option>
         ))}
       </select>

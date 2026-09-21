@@ -6,6 +6,7 @@ import AlumniCard, {
 } from "@/components/AlumniCard";
 import DirectoryFilters from "@/components/DirectoryFilters";
 import AnimatedSection from "@/components/AnimatedSection";
+import { isValidBatchYear } from "@/utils/batch";
 import { Users, SearchX, ArrowDown } from "lucide-react";
 
 const PAGE_SIZE = 24;
@@ -33,14 +34,14 @@ export default async function DirectoryPage({
   const country =
     typeof params.country === "string" && params.country ? params.country : null;
 
+  // Batch filter — 2001 theke 2026 er baire hole ignore
+  const batchParam =
+    typeof params.batch === "string" ? parseInt(params.batch, 10) : NaN;
+  const batch = isValidBatchYear(batchParam) ? batchParam : null;
+
   const supabase = await createClient();
 
-  // Filter dropdown-er khabar
-  const { data: faculties } = await supabase
-    .from("faculties")
-    .select("id, name")
-    .order("name");
-
+  // Country dropdown-er khabar (bideshi desh gulO)
   const { data: countryRows } = await supabase
     .from("profiles")
     .select("current_country")
@@ -56,7 +57,7 @@ export default async function DirectoryPage({
     )
   ).sort();
 
-  // Faculty filter → oi faculty-r department-id gulo
+  // Faculty-page link theke ashle (?faculty=...) — oi faculty-r dept
   let departmentIds: string[] | null = null;
   if (facultyId) {
     const { data: depts } = await supabase
@@ -87,6 +88,7 @@ export default async function DirectoryPage({
       if (country) query = query.eq("current_country", country);
       else query = query.neq("current_country", "Bangladesh");
     }
+    if (batch) query = query.eq("graduation_year", batch);
     if (departmentIds) query = query.in("department_id", departmentIds);
 
     return query;
@@ -95,7 +97,6 @@ export default async function DirectoryPage({
   let profiles: DirectoryProfile[] = [];
   let queryError: string | null = null;
 
-  // Faculty-te department na thakle list faka (thik-i)
   if (departmentIds === null || departmentIds.length > 0) {
     let query = baseQuery();
 
@@ -119,7 +120,7 @@ export default async function DirectoryPage({
         const res2 = await baseQuery().or(
           `full_name.ilike.%${likeTerm}%,current_company.ilike.%${likeTerm}%,current_designation.ilike.%${likeTerm}%`
         );
-         profiles = (res2.data ?? []) as unknown as DirectoryProfile[];
+        profiles = (res2.data ?? []) as unknown as DirectoryProfile[];
         queryError = res2.error ? res2.error.message : null;
       }
     }
@@ -156,6 +157,7 @@ export default async function DirectoryPage({
     if (facultyId) sp.set("faculty", facultyId);
     if (loc !== "all") sp.set("loc", loc);
     if (country) sp.set("country", country);
+    if (batch) sp.set("batch", String(batch));
     sp.set("before", cursor);
     return `/directory?${sp.toString()}`;
   }
@@ -168,19 +170,18 @@ export default async function DirectoryPage({
           <p className="mt-1 text-ink/50">
             {q
               ? `"${q}" — ${profiles.length} জন পাওয়া গেলো`
-              : loc === "bd"
-                ? "বাংলাদেশে থাকা SAU-র সদস্যরা"
-                : loc === "abroad"
-                  ? "বিদেশে থাকা SAU-র সদস্যরা"
-                  : "SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীরা"}
+              : batch
+                ? `ব্যাচ ${batch}-এর সদস্যরা`
+                : loc === "bd"
+                  ? "বাংলাদেশে থাকা SAU-র সদস্যরা"
+                  : loc === "abroad"
+                    ? "বিদেশে থাকা SAU-র সদস্যরা"
+                    : "SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীরা"}
           </p>
         </div>
       </AnimatedSection>
 
-      <DirectoryFilters
-        faculties={(faculties ?? []) as { id: string; name: string }[]}
-        countries={countries}
-      />
+      <DirectoryFilters countries={countries} />
 
       {queryError ? (
         <AnimatedSection>
@@ -198,7 +199,9 @@ export default async function DirectoryPage({
             <p className="text-ink/60">
               {q
                 ? "এই নামে কাউকে খুঁজে পাওয়া যায়নি। বানানটা একবার দেখে নাও।"
-                : "এখনো কোনো public প্রোফাইল নেই। সবার আগে যোগ দিন!"}
+                : batch
+                  ? "এই ব্যাচে এখনো কেউ যোগ দেয়নি।"
+                  : "এখনো কোনো public প্রোফাইল নেই। সবার আগে যোগ দিন!"}
             </p>
           </div>
         </AnimatedSection>

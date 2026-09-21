@@ -14,7 +14,9 @@ import {
   RotateCcw,
   Loader2,
   AlertCircle,
+  GraduationCap,
 } from "lucide-react";
+import { BATCH_YEARS } from "@/utils/batch";
 
 type Member = {
   id: string;
@@ -25,6 +27,7 @@ type Member = {
   deleted: boolean;
   email: string;
   joined: string;
+  batch: number | null;
 };
 
 const roleConfig: Record<
@@ -63,6 +66,7 @@ export default function AdminMemberList({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; success: boolean } | null>(null);
+  const [batchFilter, setBatchFilter] = useState("");
 
   async function act(action: string, targetId: string, value?: boolean) {
     setBusy(true);
@@ -86,15 +90,19 @@ export default function AdminMemberList({
     }
   }
 
+  // Batch filter — client-side (member list choto, DB hit lagbe na)
+  const visible = batchFilter
+    ? members.filter((m) => String(m.batch) === batchFilter)
+    : members;
+
   return (
     <div>
       {message && (
         <div
-          className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-sm transition-all ${
-            message.success
+          className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-sm transition-all ${message.success
               ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
-          }`}
+            }`}
         >
           {message.success ? (
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -105,8 +113,33 @@ export default function AdminMemberList({
         </div>
       )}
 
+      {/* Batch filter bar */}
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 text-sm text-ink/60">
+          <GraduationCap className="h-4 w-4 text-sau" />
+          <span>ব্যাচ দিয়ে খুঁজো:</span>
+        </div>
+        <select
+          value={batchFilter}
+          onChange={(e) => setBatchFilter(e.target.value)}
+          className="rounded-xl border border-line bg-surface px-3 py-2 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10"
+        >
+          <option value="">সব ব্যাচ</option>
+          {BATCH_YEARS.map((y) => (
+            <option key={y} value={y}>
+              ব্যাচ {y}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-ink/40">
+          {batchFilter
+            ? `${visible.length} জন দেখানো হচ্ছে (মোট ${members.length})`
+            : ""}
+        </span>
+      </div>
+
       <div className="mt-6 space-y-3">
-        {members.map((m) => {
+        {visible.map((m) => {
           // Admin actor admin target ke dekhachhe — kichhu-i na
           const cannotTouch =
             m.is_permanent ||
@@ -123,9 +156,8 @@ export default function AdminMemberList({
           return (
             <div
               key={m.id}
-              className={`group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4.5 backdrop-blur-sm shadow-sm transition-all duration-200 hover:border-sau/30 hover:shadow-md ${
-                m.deleted ? "opacity-60 bg-surface/40" : ""
-              }`}
+              className={`group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4.5 backdrop-blur-sm shadow-sm transition-all duration-200 hover:border-sau/30 hover:shadow-md ${m.deleted ? "opacity-60 bg-surface/40" : ""
+                }`}
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 font-medium">
@@ -141,6 +173,12 @@ export default function AdminMemberList({
                     <RoleIcon className="h-3 w-3" />
                     <span>{roleInfo.label}</span>
                   </span>
+                  {m.batch && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-line bg-base px-2.5 py-0.5 text-xs font-medium text-ink/60">
+                      <GraduationCap className="h-3 w-3" />
+                      <span>ব্যাচ {m.batch}</span>
+                    </span>
+                  )}
                   {m.deleted && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-100/80 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
                       <PauseCircle className="h-3 w-3" />

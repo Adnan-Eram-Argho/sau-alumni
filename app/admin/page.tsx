@@ -18,7 +18,7 @@ export default async function AdminPage() {
   const { data: members } = await adminClient
     .from("profiles")
     .select(
-      "id, full_name, role, is_permanent, is_verified, deleted_at, created_at"
+      "id, full_name, role, is_permanent, is_verified, deleted_at, created_at, graduation_year"
     )
     .order("created_at", { ascending: false });
 
@@ -40,6 +40,7 @@ export default async function AdminPage() {
     deleted: !!m.deleted_at,
     email: emailMap[m.id] ?? "—",
     joined: m.created_at?.slice(0, 10) ?? "",
+    batch: m.graduation_year ?? null,
   }));
 
   return (
