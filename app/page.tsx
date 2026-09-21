@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/server";
 import AnimatedSection from "@/components/AnimatedSection";
 import HeroScene from "@/components/HeroScene";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Search, UserCircle, Megaphone, Briefcase, ArrowRight, Sparkles } from "lucide-react";
 
 const features = [
@@ -20,7 +22,7 @@ const features = [
     icon: Megaphone,
     title: "নোটিশ বোর্ড",
     text: "ফ্যাকাল্টি ও বিভাগের আপডেট, ইভেন্ট, দরকারি খবর — এক জায়গায়।",
-    soon: true,
+    soon: false,
   },
   {
     icon: Briefcase,
@@ -30,56 +32,73 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Admin carousel chobi ache kina?
+  const supabase = await createClient();
+  const { data: heroImages } = await supabase
+    .from("homepage_images")
+    .select("id, image_url")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  const slides = (heroImages ?? []).map((img) => ({
+    id: img.id,
+    image_url: img.image_url,
+  }));
+
   return (
     <div>
-      {/* Hero — sobar prothom dekha */}
-      <section className="relative overflow-hidden gradient-hero text-white wave-divider">
-        {/* 3D background scene */}
-        <HeroScene />
+      {/* HERO — chobi thakle carousel, na thakle 3D design */}
+      {slides.length > 0 ? (
+        <HeroCarousel slides={slides} />
+      ) : (
+        <section className="relative overflow-hidden gradient-hero text-white wave-divider">
+          {/* 3D background scene */}
+          <HeroScene />
 
-        <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center sm:py-32">
-          <AnimatedSection delay={0.1}>
-            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium tracking-wide text-emerald-200 backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5" />
-              শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · ঢাকা
-            </p>
-          </AnimatedSection>
+          <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center sm:py-32">
+            <AnimatedSection delay={0.1}>
+              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium tracking-wide text-emerald-200 backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+                শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · ঢাকা
+              </p>
+            </AnimatedSection>
 
-          <AnimatedSection delay={0.25}>
-            <h1 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-snug sm:text-5xl sm:leading-tight lg:text-6xl lg:leading-tight">
-              এক ক্যাম্পাস, এক পরিবার —{" "}
-              <span className="gradient-text">সারা পৃথিবীতে</span>
-            </h1>
-          </AnimatedSection>
+            <AnimatedSection delay={0.25}>
+              <h1 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-snug sm:text-5xl sm:leading-tight lg:text-6xl lg:leading-tight">
+                এক ক্যাম্পাস, এক পরিবার —{" "}
+                <span className="gradient-text">সারা পৃথিবীতে</span>
+              </h1>
+            </AnimatedSection>
 
-          <AnimatedSection delay={0.4}>
-            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-emerald-100/90 sm:text-lg">
-              SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের নেটওয়ার্ক। তোমার
-              ব্যাচমেট কোথায় আছে — দেশে না বিদেশে — এক সার্চেই খুঁজে নাও।
-            </p>
-          </AnimatedSection>
+            <AnimatedSection delay={0.4}>
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-emerald-100/90 sm:text-lg">
+                SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের নেটওয়ার্ক। তোমার
+                ব্যাচমেট কোথায় আছে — দেশে না বিদেশে — এক সার্চেই খুঁজে নাও।
+              </p>
+            </AnimatedSection>
 
-          <AnimatedSection delay={0.55}>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/auth/signup"
-                className="btn-shimmer group flex items-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 font-semibold text-emerald-950 shadow-lg shadow-amber-400/20 transition-all hover:bg-amber-300 hover:shadow-xl hover:shadow-amber-400/30"
-              >
-                যোগ দিন — একদম ফ্রি
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-              <Link
-                href="/directory"
-                className="group flex items-center gap-2 rounded-xl border border-emerald-200/30 px-7 py-3.5 font-semibold text-white backdrop-blur-sm transition-all hover:border-emerald-200/50 hover:bg-white/10"
-              >
-                ডিরেক্টরি দেখুন
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+            <AnimatedSection delay={0.55}>
+              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  href="/auth/signup"
+                  className="btn-shimmer group flex items-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 font-semibold text-emerald-950 shadow-lg shadow-amber-400/20 transition-all hover:bg-amber-300 hover:shadow-xl hover:shadow-amber-400/30"
+                >
+                  যোগ দিন — একদম ফ্রি
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href="/directory"
+                  className="group flex items-center gap-2 rounded-xl border border-emerald-200/30 px-7 py-3.5 font-semibold text-white backdrop-blur-sm transition-all hover:border-emerald-200/50 hover:bg-white/10"
+                >
+                  ডিরেক্টরি দেখুন
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+              </div>
+            </AnimatedSection>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="mx-auto max-w-6xl px-4 py-20">

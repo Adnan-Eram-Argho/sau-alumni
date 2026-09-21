@@ -22,6 +22,7 @@ const actionSchema = z.object({
     "archive_notice",
     "unarchive_notice",
     "delete_notice",
+    "delete_homepage_image",
   ]),
   target_id: z.string().uuid(),
   value: z.boolean().optional(),
@@ -142,7 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-    // ---------- Notice delete (shudhu DRAFT) ----------
+  // ---------- Notice delete (shudhu DRAFT) ----------
   if (action === "delete_notice") {
     const { data: notice } = await adminClient
       .from("notices")
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
       console.error("Notice delete failed:", delError.message);
       return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
-        // Chobi chhilo? Storage theke-o muchhi
+    // Chobi chhilo? Storage theke-o muchhi
     if (notice.image_url) {
       const marker = "/object/public/notice-images/";
       const idx = notice.image_url.indexOf(marker);
@@ -187,6 +188,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // ---------- Homepage carousel: chobi remove ----------
+  if (action === "delete_homepage_image") {
+    const { data: img } = await adminClient
+      .from("homepage_images")
+      .select("id, image_url")
+      .eq("id", target_id)
+      .maybeSingle();
+
+    if (!img) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+
+    // Row muchhi
+    const { error: delError } = await adminClient
+      .from("homepage_images")
+      .delete()
+      .eq("id", target_id);
+
+    if (delError) {
+      console.error("Homepage image delete failed:", delError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+
+    // Storage theke-O muchhi — etim file rakhbo na
+    const marker = "/object/public/homepage-images/";
+    const idx = img.image_url.indexOf(marker);
+    if (idx !== -1) {
+      const imgPath = img.image_url.slice(idx + marker.length);
+      if (imgPath) {
+        const { error: storageError } = await adminClient.storage
+          .from("homepage-images")
+          .remove([imgPath]);
+        if (storageError) {
+          console.error("Homepage image storage cleanup failed:", storageError.message);
+        }
+      }
+    }
+
+    await writeAudit(adminClient, actorId, action, "homepage_images", target_id);
+    return NextResponse.json({ ok: true });
+  }
 
   // ---------- Verification review ----------
   if (action === "approve_verification" || action === "reject_verification") {
