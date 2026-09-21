@@ -66,10 +66,11 @@ Analytics: **Vercel Analytics** (`@vercel/analytics/next`) is integrated in the 
 **Public (no login):**
 - Landing page (hero: admin-managed image carousel when set, else 3D botanical scene; SAU green/gold theme, dark/light toggle)
 - Alumni directory: full-text + partial-name search, **batch filter (2001 → current year + 1)**, country filter, keyset pagination (24/page)
-- Public profile pages: unique `<title>`/description per profile, JSON-LD `ProfilePage/Person`, private profiles → 404
-- Notice board: list (pinned first) + detail pages (markdown via react-markdown + rehype-sanitize, images), draft preview for the author only
-- Faculty pages, About page, floating "Made by" badge
-- `sitemap.xml` (public profiles + published notices + static pages), `robots.txt` (admin/dashboard/auth disallowed)
+- Public profile pages: unique `<title>`/description per profile, JSON-LD `ProfilePage/Person` + `BreadcrumbList`, OG profile type, private profiles → 404
+- Notice board: list (pinned first) + detail pages (markdown via react-markdown + rehype-sanitize, images, `Article` JSON-LD + `BreadcrumbList`), draft preview for the author only
+- Faculty pages (with description metadata), About page (with `EducationalOrganization` JSON-LD for SAU), floating "Made by" badge
+- `sitemap.xml` (public profiles + published notices + static pages, all with `lastModified` dates), `robots.txt` (admin/dashboard/auth disallowed)
+- Homepage: `Organization` + `WebSite` + `SearchAction` JSON-LD (sitelinks search box eligible)
 - PWA: installable, offline fallback page, service worker precache
 
 **Members (login required, `/dashboard`):**
@@ -509,12 +510,54 @@ Exchanges the `code` query param for a session; if the user has no `profiles` ro
 
 ## 16. SEO & PWA
 
-- `generateMetadata` on profile + notice detail pages (unique title/description).
+### SEO Foundation
+- `generateMetadata` on every public page (unique title/description per page).
+- **Title template** in root layout: `"%s — SAU Alumni"` — consistent branding across all pages.
 - `metadataBase` = production URL (root layout).
+- **Canonical URLs** (`alternates.canonical`) on every page — prevents duplicate content issues.
+- **Expanded keywords** (18+): both Bangla (`শেকৃবি`, `SAU ডিরেক্টরি`, `কৃষি বিশ্ববিদ্যালয়`) and English.
+- **Category**: `education` metadata for search engine classification.
+
+### Structured Data (JSON-LD)
+| Page | Schema Types | Purpose |
+|---|---|---|
+| Homepage (`/`) | `Organization` + `WebSite` + `WebPage` + `SearchAction` | Google entity recognition, sitelinks search box |
+| Alumni profiles (`/alumni/[id]`) | `ProfilePage` + `Person` + `BreadcrumbList` | Rich profile cards, breadcrumb trail |
+| Notice detail (`/notices/[slug]`) | `Article` + `BreadcrumbList` | Article rich results, breadcrumb trail |
+| About (`/about`) | `EducationalOrganization` (SAU) | University entity recognition |
+
+- `Person` schema includes: `name`, `url`, `image`, `alumniOf` (SAU with `sameAs`), `jobTitle`, `worksFor`, `email`, `nationality`.
+- `Article` schema includes: `headline`, `datePublished`, `author`, `publisher` (with logo), `image`.
+- `BreadcrumbList` on profiles: হোম → ডিরেক্টরি → Name; on notices: হোম → নোটিশ বোর্ড → Title.
+
+### Open Graph & Social Sharing
+- **OG image**: custom 1200×630 px branded image (`public/og-image.png`) — SAU green/gold design.
+- **Twitter card**: `summary_large_image` — large preview on share.
+- **OG profile type** on alumni pages (`type: "profile"`) with avatar as OG image.
+- **OG article type** on notice pages (`type: "article"`) with notice image.
+- Bangla descriptions in all OG/Twitter metadata.
+
+### Sitemap & Crawling
 - `sitemap.ts`: static pages + faculty slugs + published notice slugs + **public profiles only** (privacy-first).
+- **`lastModified` dates** on every sitemap entry: profiles → `created_at`, notices → `publish_at`, faculties → `created_at`.
 - `robots.ts`: disallow `/admin`, `/dashboard`, `/auth`.
-- JSON-LD `ProfilePage`/`Person` (alumniOf SAU) on profiles.
-- PWA: `manifest.ts` (SAU icons 192/512 + maskable, theme #1e5c3a, standalone), Serwist precache + navigation-only offline fallback. iOS: install via Safari → Share → Add to Home Screen (Chrome on iOS doesn't trigger install).
+- Google Search Console verification tag in root layout metadata.
+
+### Per-Page Metadata
+| Page | Title | Description | Canonical |
+|---|---|---|---|
+| Homepage | SAU Alumni — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় এলামনাই নেটওয়ার্ক | Bangla + English | ✅ |
+| Directory | Alumni ডিরেক্টরি — SAU Alumni | Bangla + English keywords | ✅ |
+| Profile `[id]` | `{name} — SAU Alumni` | Bio or designation/company | ✅ |
+| Notice `[slug]` | `{title} — SAU Alumni` | Content excerpt | ✅ |
+| Notices list | নোটিশ বোর্ড — SAU Alumni | Bangla description | ✅ |
+| Faculty `[slug]` | `{name} — SAU Alumni` | Faculty + departments + SAU context | ✅ |
+| About | আমাদের সম্পর্কে — SAU Alumni | Platform description | ✅ |
+| Privacy | গোপনীয়তা নীতি — SAU Alumni | Privacy policy description | ✅ |
+| Terms | শর্তাবলী — SAU Alumni | Terms description | ✅ |
+
+### PWA
+- `manifest.ts` (SAU icons 192/512 + maskable, theme #1e5c3a, standalone), Serwist precache + navigation-only offline fallback. iOS: install via Safari → Share → Add to Home Screen (Chrome on iOS doesn't trigger install).
 
 ---
 
