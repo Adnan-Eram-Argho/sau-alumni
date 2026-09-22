@@ -61,10 +61,24 @@ async function getTouchableProfile(
   return { ok: true, target: { role: target.role } };
 }
 
+function json(data: unknown, init?: { status?: number }) {
+  return NextResponse.json(data, {
+    status: init?.status ?? 200,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function POST(request: Request) {
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+    return json({ error: "unsupported_media_type" }, { status: 415 });
+  }
+
   const check = await requireAdmin();
   if (!check.ok) {
-    return NextResponse.json({ error: "forbidden" }, { status: check.status });
+    return json({ error: "forbidden" }, { status: check.status });
   }
   const { adminClient, actorId, actorRole } = check;
 
@@ -72,12 +86,12 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
 
   const parsed = actionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
   const { action, target_id, value } = parsed.data;
 
@@ -96,35 +110,35 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!notice) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+      return json({ error: "not_found" }, { status: 404 });
     }
 
     let update: Record<string, unknown> | null = null;
 
     if (action === "publish_notice") {
       if (notice.status !== "draft") {
-        return NextResponse.json({ error: "not_draft" }, { status: 400 });
+        return json({ error: "not_draft" }, { status: 400 });
       }
       update = { status: "published", publish_at: new Date().toISOString() };
     } else if (action === "unpublish_notice") {
       if (notice.status !== "published") {
-        return NextResponse.json({ error: "not_published" }, { status: 400 });
+        return json({ error: "not_published" }, { status: 400 });
       }
       update = { status: "draft", pinned: false };
     } else if (action === "pin_notice") {
       if (notice.status !== "published") {
-        return NextResponse.json({ error: "not_published" }, { status: 400 });
+        return json({ error: "not_published" }, { status: 400 });
       }
       update = { pinned: value ?? !notice.pinned };
     } else if (action === "archive_notice") {
       if (notice.status !== "published") {
-        return NextResponse.json({ error: "not_published" }, { status: 400 });
+        return json({ error: "not_published" }, { status: 400 });
       }
       update = { status: "archived", pinned: false };
     } else {
       // unarchive_notice
       if (notice.status !== "archived") {
-        return NextResponse.json({ error: "not_archived" }, { status: 400 });
+        return json({ error: "not_archived" }, { status: 400 });
       }
       update = { status: "published" };
     }
@@ -135,12 +149,15 @@ export async function POST(request: Request) {
       .eq("id", target_id);
 
     if (nError) {
-      console.error("Notice action failed:", nError.message);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
+      console.error(
+        `[Admin API] Notice update for action "${action}" on notice ${target_id} by actor ${actorId} (${actorRole}) failed:`,
+        nError.message
+      );
+      return json({ error: "server_error" }, { status: 500 });
     }
 
     await writeAudit(adminClient, actorId, action, "notices", target_id, update);
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   }
 
   // ---------- Notice delete (shudhu DRAFT) ----------
@@ -152,10 +169,10 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!notice) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+      return json({ error: "not_found" }, { status: 404 });
     }
     if (notice.status !== "draft") {
-      return NextResponse.json({ error: "only_draft" }, { status: 400 });
+      return json({ error: "only_draft" }, { status: 400 });
     }
 
     const { error: delError } = await adminClient
@@ -164,8 +181,11 @@ export async function POST(request: Request) {
       .eq("id", target_id);
 
     if (delError) {
-      console.error("Notice delete failed:", delError.message);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
+      console.error(
+        `[Admin API] Notice delete on notice ${target_id} by actor ${actorId} (${actorRole}) failed:`,
+        delError.message
+      );
+      return json({ error: "server_error" }, { status: 500 });
     }
     // Chobi chhilo? Storage theke-o muchhi
     if (notice.image_url) {
@@ -178,14 +198,17 @@ export async function POST(request: Request) {
             .from("notice-images")
             .remove([imgPath]);
           if (imgError) {
-            console.error("Notice image cleanup failed:", imgError.message);
+            console.error(
+              `[Admin API] Notice image cleanup on notice ${target_id} by actor ${actorId} failed:`,
+              imgError.message
+            );
           }
         }
       }
     }
 
     await writeAudit(adminClient, actorId, action, "notices", target_id);
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   }
 
   // ---------- Homepage carousel: chobi remove ----------
@@ -197,7 +220,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!img) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+      return json({ error: "not_found" }, { status: 404 });
     }
 
     // Row muchhi
@@ -207,8 +230,11 @@ export async function POST(request: Request) {
       .eq("id", target_id);
 
     if (delError) {
-      console.error("Homepage image delete failed:", delError.message);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
+      console.error(
+        `[Admin API] Homepage image delete on image ${target_id} by actor ${actorId} (${actorRole}) failed:`,
+        delError.message
+      );
+      return json({ error: "server_error" }, { status: 500 });
     }
 
     // Storage theke-O muchhi — etim file rakhbo na
@@ -221,13 +247,16 @@ export async function POST(request: Request) {
           .from("homepage-images")
           .remove([imgPath]);
         if (storageError) {
-          console.error("Homepage image storage cleanup failed:", storageError.message);
+          console.error(
+            `[Admin API] Homepage image storage cleanup on image ${target_id} by actor ${actorId} failed:`,
+            storageError.message
+          );
         }
       }
     }
 
     await writeAudit(adminClient, actorId, action, "homepage_images", target_id);
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   }
 
   // ---------- Verification review ----------
@@ -239,12 +268,12 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!vr || vr.status !== "pending") {
-      return NextResponse.json({ error: "not_pending" }, { status: 400 });
+      return json({ error: "not_pending" }, { status: 400 });
     }
 
     const touch = await getTouchableProfile(adminClient, vr.profile_id, actorRole);
     if (!touch.ok) {
-      return NextResponse.json({ error: touch.error }, { status: touch.status });
+      return json({ error: touch.error }, { status: touch.status });
     }
 
     const { error: vrError } = await adminClient
@@ -256,8 +285,11 @@ export async function POST(request: Request) {
       .eq("id", target_id);
 
     if (vrError) {
-      console.error("Verification review failed:", vrError.message);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
+      console.error(
+        `[Admin API] Verification review action "${action}" on request ${target_id} by actor ${actorId} failed:`,
+        vrError.message
+      );
+      return json({ error: "server_error" }, { status: 500 });
     }
 
     if (action === "approve_verification") {
@@ -267,13 +299,16 @@ export async function POST(request: Request) {
         .eq("id", vr.profile_id);
 
       if (pError) {
-        console.error("Verify profile failed:", pError.message);
-        return NextResponse.json({ error: "server_error" }, { status: 500 });
+        console.error(
+          `[Admin API] Verify profile on ${vr.profile_id} by actor ${actorId} failed:`,
+          pError.message
+        );
+        return json({ error: "server_error" }, { status: 500 });
       }
     }
 
     await writeAudit(adminClient, actorId, action, "verification_requests", target_id);
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   }
 
   // ---------- Report review ----------
@@ -285,7 +320,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (!report || report.status !== "pending") {
-      return NextResponse.json({ error: "not_pending" }, { status: 400 });
+      return json({ error: "not_pending" }, { status: 400 });
     }
 
     const { error: rError } = await adminClient
@@ -294,18 +329,21 @@ export async function POST(request: Request) {
       .eq("id", target_id);
 
     if (rError) {
-      console.error("Report review failed:", rError.message);
-      return NextResponse.json({ error: "server_error" }, { status: 500 });
+      console.error(
+        `[Admin API] Report review action "${action}" on report ${target_id} by actor ${actorId} failed:`,
+        rError.message
+      );
+      return json({ error: "server_error" }, { status: 500 });
     }
 
     await writeAudit(adminClient, actorId, action, "reports", target_id);
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   }
 
   // ---------- Profile actions ----------
   const touch = await getTouchableProfile(adminClient, target_id, actorRole);
   if (!touch.ok) {
-    return NextResponse.json({ error: touch.error }, { status: touch.status });
+    return json({ error: touch.error }, { status: touch.status });
   }
   const target = touch.target;
 
@@ -317,28 +355,28 @@ export async function POST(request: Request) {
       break;
     case "make_contributor":
       if (target.role !== "alumni") {
-        return NextResponse.json({ error: "only_alumni" }, { status: 400 });
+        return json({ error: "only_alumni" }, { status: 400 });
       }
       update = { role: "contributor" };
       break;
     case "make_alumni":
       if (target.role !== "contributor") {
-        return NextResponse.json({ error: "only_contributor" }, { status: 400 });
+        return json({ error: "only_contributor" }, { status: 400 });
       }
       update = { role: "alumni" };
       break;
     case "make_admin":
       if (actorRole !== "super_admin") {
-        return NextResponse.json({ error: "superadmin_only" }, { status: 403 });
+        return json({ error: "superadmin_only" }, { status: 403 });
       }
       update = { role: "admin" };
       break;
     case "demote_admin":
       if (actorRole !== "super_admin") {
-        return NextResponse.json({ error: "superadmin_only" }, { status: 403 });
+        return json({ error: "superadmin_only" }, { status: 403 });
       }
       if (target.role !== "admin") {
-        return NextResponse.json({ error: "not_admin" }, { status: 400 });
+        return json({ error: "not_admin" }, { status: 400 });
       }
       update = { role: "alumni" };
       break;
@@ -349,7 +387,7 @@ export async function POST(request: Request) {
       update = { deleted_at: null, is_public: true };
       break;
     default:
-      return NextResponse.json({ error: "bad_action" }, { status: 400 });
+      return json({ error: "bad_action" }, { status: 400 });
   }
 
   const { error: updateError } = await adminClient
@@ -358,10 +396,13 @@ export async function POST(request: Request) {
     .eq("id", target_id);
 
   if (updateError) {
-    console.error("Admin action failed:", updateError.message);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    console.error(
+      `[Admin API] Profile update for action "${action}" on target ${target_id} by actor ${actorId} (${actorRole}) failed:`,
+      updateError.message
+    );
+    return json({ error: "server_error" }, { status: 500 });
   }
 
   await writeAudit(adminClient, actorId, action, "profiles", target_id, update);
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }

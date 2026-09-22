@@ -1,9 +1,13 @@
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
+import { createPublicClient } from "@/utils/supabase/public";
 import AnimatedSection from "@/components/AnimatedSection";
-import HeroScene from "@/components/HeroScene";
 import HeroCarousel from "@/components/HeroCarousel";
+import HeroSceneLoader from "@/components/HeroSceneLoader";
 import { Search, UserCircle, Megaphone, Briefcase, ArrowRight, Sparkles } from "lucide-react";
+
+// Homepage-r data (hero images) 5 min cache — prottek request-e
+// Supabase hit hobe na, ISR serve korbe
+export const revalidate = 300;
 
 const features = [
   {
@@ -90,7 +94,8 @@ const homepageJsonLd = {
 
 export default async function HomePage() {
   // Admin carousel chobi ache kina?
-  const supabase = await createClient();
+  // Cookie-less client — ISR cache korar jonno (revalidate=300)
+  const supabase = createPublicClient();
   const { data: heroImages } = await supabase
     .from("homepage_images")
     .select("id, image_url")
@@ -115,7 +120,7 @@ export default async function HomePage() {
       ) : (
         <section className="relative overflow-hidden gradient-hero text-white wave-divider">
           {/* 3D background scene */}
-          <HeroScene />
+          <HeroSceneLoader />
 
           <div className="relative z-10 mx-auto max-w-6xl px-4 py-20 text-center sm:py-32">
             <AnimatedSection delay={0.1}>

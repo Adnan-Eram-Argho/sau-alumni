@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { BATCH_YEARS } from "@/utils/batch";
@@ -19,6 +19,12 @@ export default function DirectoryFilters({ countries }: Props) {
   const [country, setCountry] = useState(searchParams.get("country") ?? "");
   const [batch, setBatch] = useState(searchParams.get("batch") ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+  }, []);
 
   // URL-e param boshiye server ke abar data ane
   function applyParams(updates: Record<string, string | null>) {

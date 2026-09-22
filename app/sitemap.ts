@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
-import { createClient } from "@/utils/supabase/server";
+import { createPublicClient } from "@/utils/supabase/public";
+
+// Sitemap 1 ghonta-r cache — bar bar build hobe na
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://sau-alumni.vercel.app";
@@ -13,13 +16,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/terms`, changeFrequency: "yearly", priority: 0.3, lastModified: new Date("2025-01-01") },
   ];
 
-  const supabase = await createClient();
+  // Cookie-less client — ISR cache korar jonno (revalidate=3600)
+  const supabase = createPublicClient();
+
+  // 3ta query-i parallel — ek-e oporer upor depend kore na
+  const [facultyRes, noticeRes, profileRes] = await Promise.all([
+    supabase.from("faculties").select("slug, created_at"),
+    supabase.from("notices").select("slug, publish_at, created_at").eq("status", "published"),
+    supabase.from("profiles").select("id, created_at").eq("is_public", true).is("deleted_at", null),
+  ]);
 
   // Faculty pages
-  const { data: faculties } = await supabase
-    .from("faculties")
-    .select("slug, created_at");
-  (faculties ?? []).forEach((f) => {
+  (facultyRes.data ?? []).forEach((f) => {
     entries.push({
       url: `${base}/faculty/${f.slug}`,
       changeFrequency: "weekly",
@@ -29,11 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Published notices — lastModified = publish_at ba created_at
-  const { data: notices } = await supabase
-    .from("notices")
-    .select("slug, publish_at, created_at")
-    .eq("status", "published");
-  (notices ?? []).forEach((n) => {
+  (noticeRes.data ?? []).forEach((n) => {
     entries.push({
       url: `${base}/notices/${n.slug}`,
       changeFrequency: "weekly",
@@ -47,12 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   // Profile pages — SHUDHU public gulai (privacy-first, spec)
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, created_at")
-    .eq("is_public", true)
-    .is("deleted_at", null);
-  (profiles ?? []).forEach((p) => {
+  (profileRes.data ?? []).forEach((p) => {
     entries.push({
       url: `${base}/alumni/${p.id}`,
       changeFrequency: "monthly",

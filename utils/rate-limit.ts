@@ -21,3 +21,12 @@ export const authPagesLimiter = redis
       prefix: "sau-alumni:auth-pages",
     })
   : undefined;
+
+// API mutation routes (/api/admin, /api/notices, /api/delete-image): protti IP 1 minute-e max 30 bar
+export const apiMutationLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, "1 m"),
+      prefix: "sau-alumni:api-mutations",
+    })
+  : undefined;

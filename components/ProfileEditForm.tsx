@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Image from "next/image";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 import { COUNTRIES } from "@/utils/countries";
@@ -191,10 +192,11 @@ export default function ProfileEditForm({
         <h2 className="text-sm font-medium text-ink/50">প্রোফাইল ছবি</h2>
         <div className="mt-3 flex flex-wrap items-center gap-5">
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={avatarUrl}
               alt="Avatar"
+              width={80}
+              height={80}
               className="h-20 w-20 rounded-full object-cover ring-3 ring-sau/20"
             />
           ) : (

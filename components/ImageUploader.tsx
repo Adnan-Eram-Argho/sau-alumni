@@ -23,9 +23,16 @@ export default function ImageUploader({
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
   async function handleFile(file: File) {
     setError(null);
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setError("ছবির সাইজ সর্বোচ্চ ১০ মেগাবাইট হতে পারবে।");
+      return;
+    }
+
     setUploading(true);
     try {
       const bitmap = await createImageBitmap(file);

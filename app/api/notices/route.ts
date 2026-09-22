@@ -34,67 +34,86 @@ async function getOwnDraft(
   return notice;
 }
 
+function json(data: unknown, init?: { status?: number }) {
+  return NextResponse.json(data, {
+    status: init?.status ?? 200,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function PATCH(request: Request) {
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+    return json({ error: "unsupported_media_type" }, { status: 415 });
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return json({ error: "unauthorized" }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
 
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
   const { id, ...fields } = parsed.data;
 
   const own = await getOwnDraft(supabase, id, user.id);
   if (!own) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    return json({ error: "forbidden" }, { status: 403 });
   }
 
   const service = createServiceClient();
   const { error } = await service.from("notices").update(fields).eq("id", id);
   if (error) {
-    console.error("Notice update failed:", error.message);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    console.error(`[Notices API] Update failed on notice ${id} by user ${user.id}:`, error.message);
+    return json({ error: "server_error" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }
 
 export async function DELETE(request: Request) {
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+    return json({ error: "unsupported_media_type" }, { status: 415 });
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    return json({ error: "unauthorized" }, { status: 401 });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
 
   const parsed = z.object({ id: z.string().uuid() }).safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "bad_request" }, { status: 400 });
+    return json({ error: "bad_request" }, { status: 400 });
   }
 
   const own = await getOwnDraft(supabase, parsed.data.id, user.id);
   if (!own) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    return json({ error: "forbidden" }, { status: 403 });
   }
 
   const service = createServiceClient();
@@ -103,8 +122,8 @@ export async function DELETE(request: Request) {
     .delete()
     .eq("id", parsed.data.id);
   if (error) {
-    console.error("Notice delete failed:", error.message);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    console.error(`[Notices API] Delete failed on notice ${parsed.data.id} by user ${user.id}:`, error.message);
+    return json({ error: "server_error" }, { status: 500 });
   }
 
   // Chobi chhilo? Storage theke-o muchhi (etim file rakhbo na)
@@ -118,11 +137,11 @@ export async function DELETE(request: Request) {
           .from("notice-images")
           .remove([imgPath]);
         if (imgError) {
-          console.error("Notice image cleanup failed:", imgError.message);
+          console.error(`[Notices API] Notice image cleanup on notice ${parsed.data.id} failed:`, imgError.message);
         }
       }
     }
   }
 
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }

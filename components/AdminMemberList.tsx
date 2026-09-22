@@ -99,6 +99,8 @@ export default function AdminMemberList({
     <div>
       {message && (
         <div
+          role="status"
+          aria-live="polite"
           className={`mt-4 flex items-center gap-2 rounded-xl border p-3 text-sm transition-all ${message.success
               ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               : "border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400"
@@ -261,7 +263,11 @@ export default function AdminMemberList({
                     </button>
                   ) : (
                     <button
-                      onClick={() => act("suspend", m.id)}
+                      onClick={() => {
+                        if (confirm(`আপনি কি নিশ্চিত যে ${m.full_name}-কে Suspend করতে চান?`)) {
+                          act("suspend", m.id);
+                        }
+                      }}
                       disabled={busy}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-red-300/80 px-3 py-1.5 font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
                     >

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Slide = { id: string; image_url: string };
@@ -42,12 +43,13 @@ export default function HeroCarousel({ slides }: { slides: Slide[] }) {
                         className={`absolute inset-0 transition-opacity duration-700 ${i === current ? "opacity-100" : "pointer-events-none opacity-0"
                             }`}
                     >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                             src={s.image_url}
                             alt={`SAU Alumni ${i + 1}`}
-                            className="h-full w-full object-cover"
-                            loading={i === 0 ? "eager" : "lazy"}
+                            fill
+                            className="object-cover"
+                            sizes="100vw"
+                            priority={i === 0}
                         />
                         {/* Halka dark overlay — lekha porte subidha */}
                         <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 via-emerald-950/25 to-transparent" />

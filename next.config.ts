@@ -13,6 +13,13 @@ const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 
+  // Supabase Storage-r chobi next/image-e load korar jonno
+  images: {
+    remotePatterns: supabaseHost
+      ? [{ protocol: "https" as const, hostname: supabaseHost }]
+      : [],
+  },
+
   async headers() {
     return [
       {

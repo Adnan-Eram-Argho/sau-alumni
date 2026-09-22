@@ -76,11 +76,18 @@ export async function writeAudit(
   targetId: string,
   metadata?: Record<string, unknown>
 ) {
-  await adminClient.from("audit_log").insert({
+  const { error } = await adminClient.from("audit_log").insert({
     actor_id: actorId,
     action,
     target_table: targetTable,
     target_id: targetId,
     metadata: metadata ?? null,
   });
+
+  if (error) {
+    console.error(
+      `[Audit Log Failure] Failed to record audit log for action "${action}" on ${targetTable}/${targetId} by actor ${actorId}:`,
+      error.message
+    );
+  }
 }

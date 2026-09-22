@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import ImageUploader from "@/components/ImageUploader";
 import {
@@ -114,10 +115,11 @@ export default function HomepageImageManager({
                             key={img.id}
                             className="group relative overflow-hidden rounded-xl border border-line"
                         >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <Image
                                 src={img.image_url}
                                 alt="Homepage slide"
+                                width={320}
+                                height={112}
                                 className="h-28 w-full object-cover"
                             />
                             <button

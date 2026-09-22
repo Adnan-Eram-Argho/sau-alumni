@@ -238,21 +238,23 @@ components/
   HeroCarousel.tsx            homepage hero carousel (auto-slide, arrows, dots; overlay text+CTA)
   HomepageImageManager.tsx    admin UI: add/remove carousel images (upload + storage cleanup)
   HeroScene.tsx               interactive 3D Three.js/R3F botanical seed scene with mobile fallback
+  HeroSceneLoader.tsx         dynamic client wrapper (ssr: false) eliminating Three.js from initial server bundle
   SmoothScroll.tsx            Lenis smooth scrolling provider
   AnimatedSection.tsx         Framer Motion stagger animation container
   Skeleton.tsx                reusable skeleton building blocks + page composite skeletons
 
 utils/
   supabase/server.ts          cookie-aware server client (await createClient())
+  supabase/public.ts          cookie-less anon client for ISR/static routes (createPublicClient())
   supabase/client.ts          browser client ("use client" only)
   admin.ts                    requireAdmin() + writeAudit() — SERVER ONLY
   service-client.ts           service-role client factory — SERVER ONLY
-  rate-limit.ts               Upstash limiter (undefined-safe)
+  rate-limit.ts               Upstash limiter (authPagesLimiter + apiMutationLimiter)
   countries.ts                fixed country list (name + ISO code)
   batch.ts                    batch year list — 2001 to (current year + 1), AUTO-computed
 
 supabase/migrations/          FULL schema history — source of truth, run in order
-middleware.ts                 session refresh, /dashboard+/admin login gate, auth-page rate limit
+middleware.ts                 session refresh, /dashboard+/admin login gate, auth-page + API rate limit, CSRF origin check
 ```
 
 ---
@@ -439,11 +441,16 @@ Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (
 2. **DB trigger** `protect_profiles_privilege` (§7) — even a buggy service call cannot escalate privileges.
 3. **`requireAdmin()`** (`utils/admin.ts`) — every privileged API call re-verifies the caller's role **from the database** (never client state), then hands out a service-role client.
 4. **Zod** on every request body; action enums are closed lists.
-5. **Audit log** — every admin mutation recorded (actor, action, target, metadata).
+5. **Audit log** — every admin mutation recorded (actor, action, target, metadata) with explicit error handling and failure alerting.
 6. **CSP + security headers** in `next.config.ts` (X-Frame-Options DENY, nosniff, HSTS, Permissions-Policy, Referrer-Policy; CSP `default-src 'self'`, img-src includes the Supabase host derived from env, connect-src includes Supabase + realtime wss; dev adds eval+ws localhost).
-7. **Rate limiting** on auth pages.
-8. **Markdown sanitized** via rehype-sanitize; SVG uploads blocked.
-9. `SUPABASE_SERVICE_ROLE_KEY` never leaves server code (`utils/admin.ts`, `utils/service-client.ts`, and API routes only).
+7. **Rate limiting**:
+   - Auth pages: 10 req/min/IP (`authPagesLimiter` via Upstash Redis).
+   - API mutation routes (`/api/admin`, `/api/notices`, `/api/delete-image`): 30 req/min/IP (`apiMutationLimiter` via Upstash Redis).
+8. **CSRF Origin Validation**: middleware checks the `Origin` header against `Host` / `x-forwarded-host` for all mutation methods (`POST`, `PUT`, `PATCH`, `DELETE`) on API endpoints.
+9. **Strict Content-Type verification**: all JSON API mutation endpoints reject requests that do not declare `application/json` (HTTP 415).
+10. **`Cache-Control: no-store` headers**: guaranteed across all mutating and monitoring API endpoints to prevent stale CDN/browser caching.
+11. **Markdown sanitized** via rehype-sanitize; SVG uploads blocked.
+12. `SUPABASE_SERVICE_ROLE_KEY` never leaves server code (`utils/admin.ts`, `utils/service-client.ts`, and API routes only).
 
 **Never do:** import `utils/admin.ts` or `utils/service-client.ts` from a client component; put the service key in `NEXT_PUBLIC_*`; add an RLS policy with `USING (true)` on a table with private data; render notice content as raw HTML.
 
@@ -452,22 +459,22 @@ Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (
 ## 13. API Routes (Complete Reference)
 
 ### `POST /api/admin` — all privileged mutations
-Request: `{ action: string, target_id: uuid, value?: boolean }` — requires admin or super_admin session.
+Request: `{ action: string, target_id: uuid, value?: boolean }` — requires admin or super_admin session. Enforces `Content-Type: application/json` and returns `Cache-Control: no-store`. Rate limited (30 req/min/IP).
 Actions: `set_verified`, `make_contributor`, `make_alumni`, `make_admin`, `demote_admin`, `suspend`, `restore`, `approve_verification`, `reject_verification`, `review_report`, `dismiss_report`, `publish_notice`, `unpublish_notice`, `pin_notice`, `archive_notice`, `unarchive_notice`, `delete_notice` (drafts only; also removes its image), `delete_homepage_image` (row + Storage cleanup + audit).
-Guards: permanent/super-admin rows untouchable; admin rows only by super-admin; status transitions validated (publish requires draft, etc.). Every action → `writeAudit`.
+Guards: permanent/super-admin rows untouchable; admin rows only by super-admin; status transitions validated (publish requires draft, etc.). Every action → `writeAudit` (with error logging).
 Responses: `{ok:true}` / 4xx with `{error: "..."}`.
 
 ### `PATCH /api/notices` — update own draft
-`{ id, title, content, image_url, faculty_id, department_id }` — author-only, draft-only (checked via RLS-visible row + explicit status check), update via service client.
+`{ id, title, content, image_url, faculty_id, department_id }` — author-only, draft-only (checked via RLS-visible row + explicit status check), update via service client. Enforces `Content-Type: application/json` and sends `Cache-Control: no-store`.
 
 ### `DELETE /api/notices` — delete own draft
-`{ id }` — author-only, draft-only; deletes the row and its image (service client).
+`{ id }` — author-only, draft-only; deletes the row and its image (service client). Enforces `Content-Type: application/json` and sends `Cache-Control: no-store`.
 
 ### `POST /api/delete-image` — storage cleanup
-`{ url }` — login required; URL must be a Supabase public URL of bucket `avatars` or `notice-images`; path must start with the caller's user id; deletes via service-role. Returns `{ok:true}` / 403 `{error:"forbidden"}`.
+`{ url }` — login required; URL must be a Supabase public URL of bucket `avatars` or `notice-images`; path must start with the caller's user id; deletes via service-role. Enforces `Content-Type: application/json` and sends `Cache-Control: no-store`. Returns `{ok:true}` / 403 `{error:"forbidden"}`.
 
-### `GET /api/health` — uptime monitoring
-Returns `{ status: "ok", db: "ok" }` (200) if the DB is reachable; `{ status: "unhealthy", db: "error" }` (500) otherwise. Used by external monitors like UptimeRobot.
+### `GET /api/health` — uptime monitoring & latency check
+Uses cookie-less `createPublicClient()` to ping `faculties`. Returns `{ status: "ok", db: "ok", latencyMs: <number>, timestamp: <iso> }` (200) with `Cache-Control: no-store, no-cache, must-revalidate` (or 500 on failure). Perfect for UptimeRobot and latency monitoring tools.
 
 ### `GET /auth/callback` — auth code exchange
 Exchanges the `code` query param for a session; if the user has no `profiles` row yet (e.g., signup email confirmation), auto-creates one with their `user_metadata.full_name`. Validates `next` param (must start with `/`, not `//`) to prevent open redirect. Used by **password reset** and retained for **future email-confirmation** flows.
@@ -661,6 +668,9 @@ To eliminate abrupt content popping and provide feedback during network latency 
 15. **The contact VIEW intentionally has no `security_invoker`** — see §24; adding it back will blank everyone's email in the directory.
 16. **Batch years are auto-computed** — `utils/batch.ts` derives 2001 → `currentYear + 1`. No DB table, no admin UI; a new year appears automatically. Don't "fix" this into a database table.
 17. **Password reset emails are rate-limited hard** (~2-3/hour on free tier by default) — repeated testing silently fails as "CORS did not succeed" `NetworkError`. Raise the limit in Supabase (Auth → Email rate limit, e.g. 30/hour) and test sparingly. The reset link must be opened in the **SAME browser** (PKCE) — other browsers get the friendly "link expired" screen.
+18. **Cookie-aware vs. Public Client for ISR/Caching** — `createClient()` from `utils/supabase/server.ts` invokes `cookies()`, which forces Next.js to opt out of static prerendering/ISR and treat the route as purely dynamic (ignoring `revalidate`). Public pages requiring ISR (`/`, `/sitemap.xml`, `/api/health`) must use `createPublicClient()` from `utils/supabase/public.ts`.
+19. **Three.js & 3D client-only dynamic loading** — Three.js and React Three Fiber should never be server-rendered or packed in the initial SSR chunk. Always load via `HeroSceneLoader.tsx` using `next/dynamic` with `ssr: false` (cuts ~200KB from initial JS bundle).
+20. **Eliminating sequential query waterfalls** — Never sequentially `await` independent database queries (such as profile details + contact view, or sitemap collections). Combine them with `Promise.all` to execute in parallel and shave 100ms+ off latency.
 
 ---
 

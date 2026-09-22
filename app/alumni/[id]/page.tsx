@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
@@ -123,19 +124,27 @@ export default async function ProfilePage({
 
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("profiles")
-    .select(
-      `id, full_name, avatar_url, bio, graduation_year, status,
-       current_designation, current_company, linkedin_url,
-       current_country, higher_study_institution, higher_study_program,
-       is_verified, is_public, deleted_at,
-       departments(name, faculties(name))`
-    )
-    .eq("id", id)
-    .maybeSingle();
+  // Profile + contact VIEW EK-sathe parallel — ek-e oporer upor depend kore na
+  const [{ data }, { data: contactData }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        `id, full_name, avatar_url, bio, graduation_year, status,
+         current_designation, current_company, linkedin_url,
+         current_country, higher_study_institution, higher_study_program,
+         is_verified, is_public, deleted_at,
+         departments(name, faculties(name))`
+      )
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("public_contact_info")
+      .select("email, phone_number")
+      .eq("profile_id", id)
+      .maybeSingle(),
+  ]);
 
-    const p = data as unknown as ProfileData | null;
+  const p = data as unknown as ProfileData | null;
 
   // RLS er karone onno karo PRIVATE profile ekhene ashbei na —
   // privacy database-i rokko kore. Na pele 404.
@@ -145,13 +154,6 @@ export default async function ProfilePage({
 
   // Row esheche + private → mane malik nijei dekhchhe
   const isPrivate = p.is_public === false;
-
-  // Contact VIEW theke — phone shudhu visibility-rule onujayi
-  const { data: contactData } = await supabase
-    .from("public_contact_info")
-    .select("email, phone_number")
-    .eq("profile_id", id)
-    .maybeSingle();
 
   const c = contactData as ContactData | null;
 
@@ -253,10 +255,11 @@ export default async function ProfilePage({
       <AnimatedSection delay={0.15}>
         <div className="mt-6 glass-card flex flex-wrap items-start gap-5 rounded-2xl p-6">
           {p.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={p.avatar_url}
               alt={p.full_name}
+              width={80}
+              height={80}
               className="h-20 w-20 shrink-0 rounded-full object-cover ring-3 ring-sau/20"
             />
           ) : (

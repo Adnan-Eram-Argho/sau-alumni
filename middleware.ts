@@ -1,9 +1,49 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { authPagesLimiter } from "@/utils/rate-limit";
+import { authPagesLimiter, apiMutationLimiter } from "@/utils/rate-limit";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isApiRoute = pathname.startsWith("/api/");
+  const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
+
+  // ---- CSRF Origin Check for API mutations ----
+  if (isApiRoute && isMutation && pathname !== "/api/health") {
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+
+    if (origin && host) {
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host !== host) {
+          return NextResponse.json(
+            { error: "forbidden", message: "Invalid request origin" },
+            { status: 403, headers: { "Cache-Control": "no-store" } }
+          );
+        }
+      } catch {
+        return NextResponse.json(
+          { error: "bad_request", message: "Malformed origin header" },
+          { status: 400, headers: { "Cache-Control": "no-store" } }
+        );
+      }
+    }
+  }
+
+  // ---- Rate limit: API mutation routes ----
+  if (isApiRoute && isMutation && pathname !== "/api/health" && apiMutationLimiter) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { success } = await apiMutationLimiter.limit(ip);
+    if (!success) {
+      return NextResponse.json(
+        {
+          error: "too_many_requests",
+          message: "অনেকবার অনুরোধ পাঠানো হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।",
+        },
+        { status: 429, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+  }
 
   // ---- Rate limit: login/signup page ----
   const isAuthPage =
@@ -12,7 +52,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth/forgot-password");
 
   if (isAuthPage && authPagesLimiter) {
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const { success } = await authPagesLimiter.limit(ip);
     if (!success) {
       return new NextResponse(

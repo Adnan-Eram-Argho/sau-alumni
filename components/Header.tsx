@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -20,12 +20,16 @@ export default function Header() {
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Client ekbar banai, bar bar banabo na
+  const supabaseRef = useRef(createClient());
 
   useEffect(() => {
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setEmail(user?.email ?? null);
+    // getSession() diye initial check — token cache theke pare,
+    // server round-trip lagbe na. Display-only tai safe.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setEmail(session?.user?.email ?? null);
       setLoading(false);
     });
 
@@ -39,8 +43,7 @@ export default function Header() {
   }, []);
 
   async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await supabaseRef.current.auth.signOut();
     setMenuOpen(false);
   }
 

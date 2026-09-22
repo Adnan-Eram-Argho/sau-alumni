@@ -44,23 +44,20 @@ export default async function DirectoryPage({
 
   const supabase = await createClient();
 
-  // Country dropdown-er khabar (bideshi desh gulO)
-  const { data: countryRows } = await supabase
-    .from("profiles")
-    .select("current_country")
-    .eq("is_public", true)
-    .is("deleted_at", null)
-    .neq("current_country", "Bangladesh");
-
-  const countries = Array.from(
-    new Set(
-      (countryRows ?? [])
-        .map((r) => r.current_country)
-        .filter((c): c is string => !!c)
-    )
-  ).sort();
+  // Country dropdown query START — eker upor kichhu depend kore na,
+  // tai alada kore age pathiye dey, opore await korbo
+  const countryQueryPromise = (async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("current_country")
+      .eq("is_public", true)
+      .is("deleted_at", null)
+      .neq("current_country", "Bangladesh");
+    return data;
+  })();
 
   // Faculty-page link theke ashle (?faculty=...) — oi faculty-r dept
+  // Etar result lagbe main query-te, tai await kora mandatory
   let departmentIds: string[] | null = null;
   if (facultyId) {
     const { data: depts } = await supabase
@@ -128,6 +125,17 @@ export default async function DirectoryPage({
       }
     }
   }
+
+  // Country result await (etomuddhei resolve hoye thakbe most likely)
+  const countryRows = await countryQueryPromise;
+
+  const countries = Array.from(
+    new Set(
+      (countryRows ?? [])
+        .map((r) => r.current_country)
+        .filter((c): c is string => !!c)
+    )
+  ).sort();
 
   // Contact info — raw table NA, VIEW theke (spec Section 25)
   const contactMap: Record<string, ContactInfo> = {};

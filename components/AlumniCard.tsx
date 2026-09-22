@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import CountryFlag from "@/components/CountryFlag";
 import { BadgeCheck, Mail, Phone, GraduationCap } from "lucide-react";
 
@@ -56,16 +57,18 @@ export default function AlumniCard({
   return (
     <Link
       href={`/alumni/${profile.id}`}
+      aria-label={`${profile.full_name} এর প্রোফাইল`}
       className="glass-card gradient-border block rounded-2xl p-5 transition-all"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 font-semibold">
             {profile.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={profile.avatar_url}
                 alt=""
+                width={36}
+                height={36}
                 className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-sau/20"
               />
             ) : (

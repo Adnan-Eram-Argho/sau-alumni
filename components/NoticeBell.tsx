@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,15 +9,19 @@ import { Bell } from "lucide-react";
 // Notun/pore-na notice-r bell — login chara dekhay na
 export default function NoticeBell() {
   const [unread, setUnread] = useState<number | null>(null);
+  // Client ekbar banai — prottek refreshCount-e notun banabo na
+  const supabaseRef = useRef(createClient());
 
   useEffect(() => {
-    const supabase = createClient();
+    const supabase = supabaseRef.current;
 
     async function refreshCount() {
+      // getSession() = token cache theke — server call nei.
+      // Display-only bell count tai safe.
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
         setUnread(null);
         return;
       }
@@ -25,7 +29,7 @@ export default function NoticeBell() {
       const { data: reads } = await supabase
         .from("notice_reads")
         .select("notice_id")
-        .eq("user_id", user.id);
+        .eq("user_id", session.user.id);
 
       const readIds = new Set((reads ?? []).map((r) => r.notice_id));
 
