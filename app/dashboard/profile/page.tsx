@@ -19,20 +19,21 @@ export default async function ProfileEditPage() {
     redirect("/auth/login?next=/dashboard/profile");
   }
 
-  const { data } = await supabase
-    .from("profiles")
-    .select(
-      `id, full_name, avatar_url, department_id, graduation_year, status,
-       current_designation, current_company, linkedin_url,
-       current_country, higher_study_institution, higher_study_program, bio`
-    )
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const { data: departments } = await supabase
-    .from("departments")
-    .select("id, name, faculties(name)")
-    .order("name");
+  const [{ data }, { data: departments }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select(
+        `id, full_name, avatar_url, department_id, graduation_year, status,
+         current_designation, current_company, linkedin_url,
+         current_country, higher_study_institution, higher_study_program, bio`
+      )
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("departments")
+      .select("id, name, faculties(name)")
+      .order("name"),
+  ]);
 
   const deptList = (departments ?? []) as unknown as {
     id: string;
@@ -52,6 +53,7 @@ export default async function ProfileEditPage() {
 
       <ProfileEditForm
         userId={user.id}
+        userEmail={user.email}
         initial={data as ProfileInitial | null}
         departments={deptList.map((d) => ({
           id: d.id,

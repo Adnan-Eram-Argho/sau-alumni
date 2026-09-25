@@ -16,16 +16,30 @@ export default async function AdminPage() {
 
   const { adminClient, actorRole } = check;
 
-  const { data: members } = await adminClient
-    .from("profiles")
-    .select(
-      "id, full_name, role, is_permanent, is_verified, deleted_at, created_at, graduation_year"
-    )
-    .order("created_at", { ascending: false });
-
-  const { data: contacts } = await adminClient
-    .from("profile_contacts")
-    .select("profile_id, email");
+  // Free-tier memory guard: max 300 recent profiles & contacts fetched at once.
+  // Note: Client-side batch filter covers currently loaded items. Server pagination deferred to §25.
+  const [
+    { data: members },
+    { data: contacts },
+    { data: heroImages },
+  ] = await Promise.all([
+    adminClient
+      .from("profiles")
+      .select(
+        "id, full_name, role, is_permanent, is_verified, deleted_at, created_at, graduation_year"
+      )
+      .order("created_at", { ascending: false })
+      .limit(300),
+    adminClient
+      .from("profile_contacts")
+      .select("profile_id, email")
+      .limit(300),
+    adminClient
+      .from("homepage_images")
+      .select("id, image_url")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+  ]);
 
   const emailMap: Record<string, string> = {};
   (contacts ?? []).forEach((c) => {
@@ -43,13 +57,6 @@ export default async function AdminPage() {
     joined: m.created_at?.slice(0, 10) ?? "",
     batch: m.graduation_year ?? null,
   }));
-
-  // Homepage carousel chobi
-  const { data: heroImages } = await adminClient
-    .from("homepage_images")
-    .select("id, image_url")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">

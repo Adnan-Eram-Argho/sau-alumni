@@ -311,9 +311,9 @@ SELECT pc.profile_id, pc.email,
   END AS phone_number
 FROM profile_contacts pc
 JOIN profiles p ON p.id = pc.profile_id
-WHERE p.is_public = true OR pc.profile_id = auth.uid();
+WHERE (p.is_public = true AND p.deleted_at IS NULL) OR pc.profile_id = auth.uid();
 ```
-Runs with **owner privileges (no security_invoker — deliberate, see §24)** so its WHERE/CASE is the single access rule; the raw table stays owner-RLS-locked. `GRANT SELECT` to anon + authenticated.
+Runs with **owner privileges (no security_invoker — deliberate, see §24)** so its WHERE/CASE is the single access rule; the raw table stays owner-RLS-locked. `GRANT SELECT` to anon + authenticated. Soft-deleted (suspended) members are cleanly hidden from public directory views.
 
 ### notices
 `id` · `author_id` → profiles · `faculty_id`, `department_id` (null = everyone) · `title` · `slug` unique (auto from title) · `content` (markdown) · `status` (`draft`/`published`, default draft) · `pinned` bool · `publish_at` (set on publish) · `image_url` · `created_at`
@@ -333,6 +333,7 @@ Public read (`USING true`); admin INSERT policy (role in admin/super_admin, not 
 
 ### verification_requests
 `id` · `profile_id` (CASCADE) · `evidence_note` · `status` (`pending`/`approved`/`rejected`) · `reviewed_by` · `created_at`
+Unique partial index: `CREATE UNIQUE INDEX verification_requests_pending_unique_idx ON verification_requests (profile_id) WHERE status = 'pending';` (prevents spamming duplicate pending verification requests).
 
 ### reports
 `id` · `reporter_id` · `target_table` · `target_id` · `reason` · `status` (`pending`/`reviewed`/`dismissed`) · `created_at`
@@ -341,7 +342,8 @@ Public read (`USING true`); admin INSERT policy (role in admin/super_admin, not 
 `id` · `actor_id` (SET NULL) · `action` · `target_table` · `target_id` · `metadata` jsonb · `created_at`
 No UPDATE/DELETE policies exist → immutable. Written only by service-role routes.
 
-### Trigger: protect_profiles_privilege (BEFORE UPDATE/DELETE on profiles)
+### Trigger: protect_profiles_privilege (BEFORE INSERT OR UPDATE OR DELETE on profiles)
+- INSERT: Anyone with a JWT (auth.uid() is not null) inserting a row with `NEW.role IS DISTINCT FROM 'alumni'`, `NEW.is_permanent = true`, or `NEW.is_verified = true` → exception (prevents signup privilege escalation)
 - DELETE of a permanent-admin row → exception
 - UPDATE of permanent-admin row: changing `role`/`is_permanent`/`is_verified` → exception; other fields allowed (self-edit)
 - Anyone with a JWT (auth.uid() not null) changing `role` or `is_verified` on any row → exception (admin API only — service-role requests have no auth.uid())
@@ -383,9 +385,10 @@ Storage RLS in §9.
 | `homepage-images` | yes | 5MB | same | admin/super_admin | same (1920px, WebP q90 via ImageUploader maxSide) |
 
 Storage policies (on `storage.objects`):
-- `notice_images_upload` — insert to authenticated where role in (contributor, admin, super_admin) AND folder[1]=auth.uid()
-- `notice_images_delete_own` — delete where folder[1]=auth.uid()
-- `avatars_upload_own` / `avatars_delete_own` — insert/delete where folder[1]=auth.uid()
+- `notice_images_upload` — insert to authenticated where role in (contributor, admin, super_admin) AND `(storage.foldername(name))[1] = auth.uid()::text`
+- `homepage_images_upload` — insert to authenticated where role in (admin, super_admin) AND `(storage.foldername(name))[1] = auth.uid()::text`
+- `notice_images_delete_own` — delete where `(storage.foldername(name))[1] = auth.uid()::text`
+- `avatars_upload_own` / `avatars_delete_own` — insert/delete where `(storage.foldername(name))[1] = auth.uid()::text`
 
 ### Client upload pipeline (`components/ImageUploader.tsx`)
 1. `createImageBitmap` → optional **square center-crop** (avatars)
@@ -671,6 +674,10 @@ To eliminate abrupt content popping and provide feedback during network latency 
 18. **Cookie-aware vs. Public Client for ISR/Caching** — `createClient()` from `utils/supabase/server.ts` invokes `cookies()`, which forces Next.js to opt out of static prerendering/ISR and treat the route as purely dynamic (ignoring `revalidate`). Public pages requiring ISR (`/`, `/sitemap.xml`, `/api/health`) must use `createPublicClient()` from `utils/supabase/public.ts`.
 19. **Three.js & 3D client-only dynamic loading** — Three.js and React Three Fiber should never be server-rendered or packed in the initial SSR chunk. Always load via `HeroSceneLoader.tsx` using `next/dynamic` with `ssr: false` (cuts ~200KB from initial JS bundle).
 20. **Eliminating sequential query waterfalls** — Never sequentially `await` independent database queries (such as profile details + contact view, or sitemap collections). Combine them with `Promise.all` to execute in parallel and shave 100ms+ off latency.
+21. **Realtime session-gated for anonymous visitors** — `NoticeBell.tsx` checks session via `getSession()` and skips Realtime WebSocket subscriptions, intervals, and unread count queries for unauthenticated visitors (rendering only the bell icon). Listens to `onAuthStateChange` to dynamically attach when logging in. This prevents idle WebSocket connection exhaustion on Supabase Free Tier (limit 200 concurrent connections).
+22. **Admin suspend / restore semantics** — Admin `suspend` only sets `deleted_at = now()`, and `restore` only sets `deleted_at = null`. Neither action modifies `is_public`, preserving user privacy preference across suspension and restoration.
+23. **Directory Country Filter DB-Driven** — The country dropdown in `/directory` intentionally queries distinct countries with registered public alumni rather than rendering an exhaustive static list.
+24. **Admin Member List Memory Guard** — `/admin` queries limit `profiles` and `profile_contacts` to 300 rows as a memory safety guard for Supabase free-tier egress. Client-side batch filtering applies to these loaded records.
 
 ---
 
@@ -754,7 +761,7 @@ Transparency for future maintainers — each was a deliberate, tested decision:
 
 ## 25. Roadmap / Upgrade Ideas
 
-Near-term: faculty/department management UI (super-admin), restore faculty dropdown in directory filters (when >1 faculty goes live), scheduled notice publishing (`publish_at` + Vercel cron — 2 jobs on Hobby), weekly email digest (Resend free tier + SPF/DKIM on a subdomain), job board UI (`jobs` table ready), invite-token signup gating (`invites` table ready), account self-deletion, Cloudflare Turnstile on signup, Sentry, custom domain.
+Near-term: faculty/department management UI (super-admin), restore faculty dropdown in directory filters (when >1 faculty goes live), scheduled notice publishing (`publish_at` + Vercel cron — 2 jobs on Hobby), weekly email digest (Resend free tier + SPF/DKIM on a subdomain), job board UI (`jobs` table ready), invite-token signup gating (`invites` table ready), admin server-side pagination (deferring beyond the 300 limit memory guard), account self-deletion, Cloudflare Turnstile on signup, Sentry, custom domain.
 
 Pending decisions:
 - Suspend → login-block (middleware) — decision pending

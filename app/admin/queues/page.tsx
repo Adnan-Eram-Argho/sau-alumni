@@ -15,91 +15,6 @@ export default async function AdminQueuesPage() {
 
   const { adminClient, actorId, actorRole } = check;
 
-  // Notice drafts — contributor-der khosra.
-  // NOTE: notices-profiles DUITA path (author_id + notice_reads) —
-  // tai fkey-naam bole deya lagbe
-  const { data: drafts, error: draftsError } = await adminClient
-    .from("notices")
-    .select(
-      "id, title, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
-    )
-    .eq("status", "draft")
-    .order("created_at", { ascending: false });
-
-  if (draftsError) {
-    console.error("Notices drafts query failed:", draftsError.message);
-  }
-
-  const draftList = (drafts ?? []) as unknown as {
-    id: string;
-    title: string;
-    pinned: boolean | null;
-    created_at: string | null;
-    profiles: { full_name: string } | null;
-  }[];
-
-  // Published + archived — pin/archive manage korte
-  const { data: notices, error: noticesError } = await adminClient
-    .from("notices")
-    .select(
-      "id, title, status, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
-    )
-    .in("status", ["published", "archived"])
-    .order("created_at", { ascending: false })
-    .limit(30);
-
-  if (noticesError) {
-    console.error("Notices query failed:", noticesError.message);
-  }
-
-  const noticeList = (notices ?? []) as unknown as {
-    id: string;
-    title: string;
-    status: string;
-    pinned: boolean | null;
-    created_at: string | null;
-    profiles: { full_name: string } | null;
-  }[];
-
-  // Pending verification requests
-  const { data: vrs, error: vrsError } = await adminClient
-    .from("verification_requests")
-    .select(
-      "id, evidence_note, created_at, profiles!verification_requests_profile_id_fkey(full_name)"
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (vrsError) {
-    console.error("Verification queue query failed:", vrsError.message);
-  }
-
-  const vrList = (vrs ?? []) as unknown as {
-    id: string;
-    evidence_note: string | null;
-    created_at: string | null;
-    profiles: { full_name: string } | null;
-  }[];
-
-  // Pending reports
-  const { data: reports, error: reportsError } = await adminClient
-    .from("reports")
-    .select("id, target_table, reason, created_at, profiles(full_name)")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (reportsError) {
-    console.error("Reports queue query failed:", reportsError.message);
-  }
-
-  const reportList = (reports ?? []) as unknown as {
-    id: string;
-    target_table: string | null;
-    reason: string | null;
-    created_at: string | null;
-    profiles: { full_name: string } | null;
-  }[];
-
   // Audit — super_admin sob; admin sudhu nijer kaj (spec)
   let auditQuery = adminClient
     .from("audit_log")
@@ -111,11 +26,91 @@ export default async function AdminQueuesPage() {
     auditQuery = auditQuery.eq("actor_id", actorId);
   }
 
-  const { data: audit, error: auditError } = await auditQuery;
+  // Run all 5 queue queries concurrently in parallel
+  const [
+    { data: drafts, error: draftsError },
+    { data: notices, error: noticesError },
+    { data: vrs, error: vrsError },
+    { data: reports, error: reportsError },
+    { data: audit, error: auditError },
+  ] = await Promise.all([
+    adminClient
+      .from("notices")
+      .select(
+        "id, title, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
+      )
+      .eq("status", "draft")
+      .order("created_at", { ascending: false }),
+    adminClient
+      .from("notices")
+      .select(
+        "id, title, status, pinned, created_at, profiles!notices_author_id_fkey(full_name)"
+      )
+      .in("status", ["published", "archived"])
+      .order("created_at", { ascending: false })
+      .limit(30),
+    adminClient
+      .from("verification_requests")
+      .select(
+        "id, evidence_note, created_at, profiles!verification_requests_profile_id_fkey(full_name)"
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }),
+    adminClient
+      .from("reports")
+      .select("id, target_table, reason, created_at, profiles(full_name)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }),
+    auditQuery,
+  ]);
 
+  if (draftsError) {
+    console.error("Notices drafts query failed:", draftsError.message);
+  }
+  if (noticesError) {
+    console.error("Notices query failed:", noticesError.message);
+  }
+  if (vrsError) {
+    console.error("Verification queue query failed:", vrsError.message);
+  }
+  if (reportsError) {
+    console.error("Reports queue query failed:", reportsError.message);
+  }
   if (auditError) {
     console.error("Audit query failed:", auditError.message);
   }
+
+  const draftList = (drafts ?? []) as unknown as {
+    id: string;
+    title: string;
+    pinned: boolean | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
+
+  const noticeList = (notices ?? []) as unknown as {
+    id: string;
+    title: string;
+    status: string;
+    pinned: boolean | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
+
+  const vrList = (vrs ?? []) as unknown as {
+    id: string;
+    evidence_note: string | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
+
+  const reportList = (reports ?? []) as unknown as {
+    id: string;
+    target_table: string | null;
+    reason: string | null;
+    created_at: string | null;
+    profiles: { full_name: string } | null;
+  }[];
 
   const auditList = (audit ?? []) as unknown as {
     id: string;

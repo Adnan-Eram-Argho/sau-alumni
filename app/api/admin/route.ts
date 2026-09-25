@@ -381,10 +381,10 @@ export async function POST(request: Request) {
       update = { role: "alumni" };
       break;
     case "suspend":
-      update = { deleted_at: new Date().toISOString(), is_public: false };
+      update = { deleted_at: new Date().toISOString() };
       break;
     case "restore":
-      update = { deleted_at: null, is_public: true };
+      update = { deleted_at: null };
       break;
     default:
       return json({ error: "bad_action" }, { status: 400 });

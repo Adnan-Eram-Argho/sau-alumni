@@ -45,6 +45,7 @@ export default function Header() {
   async function handleLogout() {
     await supabaseRef.current.auth.signOut();
     setMenuOpen(false);
+    window.location.href = "/";
   }
 
   return (

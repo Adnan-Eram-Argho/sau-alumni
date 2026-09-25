@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import CountryFlag from "@/components/CountryFlag";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -53,6 +54,25 @@ type ContactData = {
   phone_number: string | null;
 };
 
+// React cache() — generateMetadata ar ProfilePage ek-e request-e ekbar-i DB call kore
+const getProfile = cache(async (id: string) => {
+  if (!UUID_PATTERN.test(id)) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select(
+      `id, full_name, avatar_url, bio, graduation_year, status,
+       current_designation, current_company, linkedin_url,
+       current_country, higher_study_institution, higher_study_program,
+       is_verified, is_public, deleted_at,
+       departments(name, faculties(name))`
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  return data as unknown as ProfileData | null;
+});
+
 // Prottek profile-r nijasro title/description (SEO — spec Section 6)
 export async function generateMetadata({
   params,
@@ -60,23 +80,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("profiles")
-    .select("full_name, bio, is_public, deleted_at, current_designation, current_company, avatar_url")
-    .eq("id", id)
-    .maybeSingle();
-
-  const profile = data as {
-    full_name: string;
-    bio: string | null;
-    is_public: boolean | null;
-    deleted_at: string | null;
-    current_designation: string | null;
-    current_company: string | null;
-    avatar_url: string | null;
-  } | null;
+  const profile = await getProfile(id);
 
   if (!profile || !profile.is_public || profile.deleted_at) {
     return { title: "প্রোফাইল পাওয়া যায়নি" };
@@ -122,35 +126,19 @@ export default async function ProfilePage({
     notFound();
   }
 
-  const supabase = await createClient();
+  const p = await getProfile(id);
 
-  // Profile + contact VIEW EK-sathe parallel — ek-e oporer upor depend kore na
-  const [{ data }, { data: contactData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(
-        `id, full_name, avatar_url, bio, graduation_year, status,
-         current_designation, current_company, linkedin_url,
-         current_country, higher_study_institution, higher_study_program,
-         is_verified, is_public, deleted_at,
-         departments(name, faculties(name))`
-      )
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("public_contact_info")
-      .select("email, phone_number")
-      .eq("profile_id", id)
-      .maybeSingle(),
-  ]);
-
-  const p = data as unknown as ProfileData | null;
-
-  // RLS er karone onno karo PRIVATE profile ekhene ashbei na —
-  // privacy database-i rokko kore. Na pele 404.
   if (!p || p.deleted_at) {
     notFound();
   }
+
+  const supabase = await createClient();
+  const { data: contactData } = await supabase
+    .from("public_contact_info")
+    .select("email, phone_number")
+    .eq("profile_id", id)
+    .maybeSingle();
+
 
   // Row esheche + private → mane malik nijei dekhchhe
   const isPrivate = p.is_public === false;

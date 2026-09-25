@@ -28,15 +28,16 @@ export default async function NewNoticePage() {
     redirect("/dashboard");
   }
 
-  const { data: faculties } = await supabase
-    .from("faculties")
-    .select("id, name")
-    .order("name");
-
-  const { data: departments } = await supabase
-    .from("departments")
-    .select("id, name, faculty_id, faculties(name)")
-    .order("name");
+  const [{ data: faculties }, { data: departments }] = await Promise.all([
+    supabase
+      .from("faculties")
+      .select("id, name")
+      .order("name"),
+    supabase
+      .from("departments")
+      .select("id, name, faculty_id, faculties(name)")
+      .order("name"),
+  ]);
 
   const deptList = (departments ?? []) as unknown as {
     id: string;

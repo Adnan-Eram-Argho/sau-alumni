@@ -60,10 +60,12 @@ const profileSchema = z.object({
 
 export default function ProfileEditForm({
   userId,
+  userEmail,
   initial,
   departments,
 }: {
   userId: string;
+  userEmail?: string | null;
   initial: ProfileInitial | null;
   departments: { id: string; name: string; facultyName: string | null }[];
 }) {
@@ -161,6 +163,18 @@ export default function ProfileEditForm({
         console.error("Profile save failed:", saveError.message);
         setError("সেভ করতে সমস্যা হলো। একটু পরে আবার চেষ্টা করো।");
         return;
+      }
+
+      // Self-heal: profile_contacts e jeno email thake
+      const emailToUse =
+        userEmail || (await supabase.auth.getUser()).data.user?.email;
+      if (emailToUse) {
+        await supabase
+          .from("profile_contacts")
+          .upsert(
+            { profile_id: userId, email: emailToUse },
+            { onConflict: "profile_id" }
+          );
       }
 
       // CLEANUP: ager SAVE-kora avatar ar use hocche na —

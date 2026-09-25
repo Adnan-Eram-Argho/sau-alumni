@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import { createClient } from "@/utils/supabase/server";
@@ -22,19 +23,30 @@ type NoticeData = {
   profiles: { full_name: string } | null;
 };
 
+// React cache() — generateMetadata ar NoticeDetailPage ek-e request-e ekbar-i DB call kore
+const getNotice = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("notices")
+    .select(
+      `id, title, content, image_url, status, pinned, publish_at, created_at,
+       faculties!notices_faculty_id_fkey(name),
+       departments!notices_department_id_fkey(name),
+       profiles!notices_author_id_fkey(full_name)`
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+
+  return data as NoticeData | null;
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("notices")
-    .select("title, content, status, image_url")
-    .eq("slug", slug)
-    .maybeSingle();
+  const data = await getNotice(slug);
 
   if (!data || data.status !== "published") {
     return { title: "নোটিশ পাওয়া যায়নি" };
@@ -70,20 +82,7 @@ export default async function NoticeDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("notices")
-    .select(
-      `id, title, content, image_url, status, pinned, publish_at, created_at,
-       faculties!notices_faculty_id_fkey(name),
-       departments!notices_department_id_fkey(name),
-       profiles!notices_author_id_fkey(full_name)`
-    )
-    .eq("slug", slug)
-    .maybeSingle();
-
-  const notice = data as NoticeData | null;
+  const notice = await getNotice(slug);
 
   if (!notice) {
     notFound();

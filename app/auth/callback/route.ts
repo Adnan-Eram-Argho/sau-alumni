@@ -41,6 +41,12 @@ export async function GET(request: Request) {
           await supabase
             .from("profiles")
             .insert({ id: user.id, full_name: fullName });
+
+          if (user.email) {
+            await supabase
+              .from("profile_contacts")
+              .insert({ profile_id: user.id, email: user.email });
+          }
         }
       }
 

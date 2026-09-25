@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/utils/supabase/server";
+import { cache } from "react";
+import { createPublicClient } from "@/utils/supabase/public";
 import AnimatedSection from "@/components/AnimatedSection";
 import { ArrowLeft, ArrowRight, Users } from "lucide-react";
+
+export const revalidate = 3600;
 
 type FacultyData = {
   id: string;
@@ -12,26 +15,31 @@ type FacultyData = {
   code: string | null;
 };
 
+const getFaculty = cache(async (slug: string) => {
+  const supabase = createPublicClient();
+  const { data } = await supabase
+    .from("faculties")
+    .select("id, name, slug, code")
+    .eq("slug", slug)
+    .maybeSingle();
+  return data as FacultyData | null;
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("faculties")
-    .select("name")
-    .eq("slug", slug)
-    .maybeSingle();
+  const faculty = await getFaculty(slug);
 
-  if (!data) {
+  if (!faculty) {
     return { title: "ফ্যাকাল্টি পাওয়া যায়নি" };
   }
 
   return {
-    title: `${data.name}`,
-    description: `${data.name} — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-এর এই ফ্যাকাল্টির সব বিভাগ ও সদস্যদের তালিকা দেখুন। SAU Alumni Network-এ সংযুক্ত হোন।`,
+    title: `${faculty.name}`,
+    description: `${faculty.name} — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-এর এই ফ্যাকাল্টির সব বিভাগ ও সদস্যদের তালিকা দেখুন। SAU Alumni Network-এ সংযুক্ত হোন।`,
     alternates: {
       canonical: `https://sau-alumni.vercel.app/faculty/${slug}`,
     },
@@ -44,37 +52,44 @@ export default async function FacultyPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("faculties")
-    .select("id, name, slug, code")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  const faculty = data as FacultyData | null;
+  const faculty = await getFaculty(slug);
   if (!faculty) {
     notFound();
   }
 
+  const supabase = createPublicClient();
   const { data: departments } = await supabase
     .from("departments")
     .select("id, name, slug")
     .eq("faculty_id", faculty.id)
     .order("name");
 
-  // Prottek department-e koto public member
-  const deptList = await Promise.all(
-    (departments ?? []).map(async (d) => {
-      const { count } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("department_id", d.id)
-        .eq("is_public", true)
-        .is("deleted_at", null);
-      return { ...d, count: count ?? 0 };
-    })
-  );
+  // Single query aggregated counts instead of N+1 count queries
+  const deptIds = (departments ?? []).map((d) => d.id);
+  const { data: memberProfiles } =
+    deptIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("department_id")
+          .in("department_id", deptIds)
+          .eq("is_public", true)
+          .is("deleted_at", null)
+      : { data: [] };
+
+  const countByDept = new Map<string, number>();
+  (memberProfiles ?? []).forEach((p) => {
+    if (p.department_id) {
+      countByDept.set(
+        p.department_id,
+        (countByDept.get(p.department_id) ?? 0) + 1
+      );
+    }
+  });
+
+  const deptList = (departments ?? []).map((d) => ({
+    ...d,
+    count: countByDept.get(d.id) ?? 0,
+  }));
 
   const totalMembers = deptList.reduce((sum, d) => sum + d.count, 0);
 

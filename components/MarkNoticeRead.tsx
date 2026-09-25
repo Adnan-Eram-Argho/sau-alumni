@@ -10,23 +10,14 @@ export default function MarkNoticeRead({ noticeId }: { noticeId: string }) {
 
     (async () => {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) return;
 
-      // Aage theke pore thakle abar dhukay na
-      const { data: existing } = await supabase
-        .from("notice_reads")
-        .select("notice_id")
-        .eq("user_id", user.id)
-        .eq("notice_id", noticeId)
-        .maybeSingle();
-
-      if (existing) return;
-
-      await supabase
-        .from("notice_reads")
-        .insert({ user_id: user.id, notice_id: noticeId });
+      await supabase.from("notice_reads").upsert(
+        { user_id: session.user.id, notice_id: noticeId },
+        { onConflict: "user_id,notice_id", ignoreDuplicates: true }
+      );
     })();
   }, [noticeId]);
 
