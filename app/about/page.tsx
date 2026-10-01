@@ -4,7 +4,7 @@ import AnimatedSection from "@/components/AnimatedSection";
 import {
   ArrowRight,
   Heart,
-  Mail,
+  Globe,
   ExternalLink,
 } from "lucide-react";
 
@@ -41,53 +41,118 @@ function LinkedinIcon({ className }: { className?: string }) {
 export const metadata = {
   title: "আমাদের সম্পর্কে",
   description:
-    "SAU Alumni Network — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়ের প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের সংযোগস্থল। এক ক্যাম্পাসের মানুষ, সারা পৃথিবীতে ছড়িয়ে — এবার এক জায়গায়।",
+    "SAU Alumni Network — শেরে-বাংলা কৃষি বিশ্ববিদ্যালয়ের প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের সংযোগস্থল। এক ক্যাম্পাসের মানুষ, সারা পৃথিবীতে ছড়িয়ে — এবার এক জায়গায়।",
   alternates: {
     canonical: "https://sau-alumni.vercel.app/about",
   },
 };
 
+const PORTFOLIO_URL = "https://adnan-eram-argho.github.io/portfolio/";
+const GITHUB_URL = "https://github.com/Adnan-Eram-Argho";
+const LINKEDIN_URL = "https://www.linkedin.com/in/md-adnan-eram-argho/";
 
-const SKILLS = [
-  "React",
-  "Next.js",
-  "TypeScript",
-  "Node.js",
-  "Express",
-  "Supabase",
-  "PostgreSQL",
-  "MongoDB",
-  "Firebase",
-  "Tailwind CSS",
-  "Python",
-  "C++",
-  "Algorithms & Data Structures",
+const STATS = [
+  { value: "৪+", label: "বছরের কোডিং অভিজ্ঞতা" },
+  { value: "৫টি", label: "লাইভ প্রজেক্ট" },
+  { value: "২৫+", label: "অনলাইন সার্টিফিকেট" },
+  { value: "৯৪%", label: "Rice AI accuracy" },
+];
+
+const SKILL_GROUPS = [
+  {
+    title: "Frontend",
+    skills: [
+      "React",
+      "Next.js",
+      "TypeScript",
+      "Tailwind CSS",
+      "shadcn/ui",
+      "Framer Motion",
+      "Vite",
+    ],
+  },
+  {
+    title: "Backend & Database",
+    skills: [
+      "Node.js",
+      "Express",
+      "Flask",
+      "REST API",
+      "Socket.io (Real-time)",
+      "Supabase",
+      "PostgreSQL",
+      "MongoDB",
+      "Firebase",
+    ],
+  },
+  {
+    title: "Data Science & Analytics",
+    skills: [
+      "Python",
+      "NumPy",
+      "Pandas",
+      "Matplotlib",
+      "Seaborn",
+      "Streamlit",
+      "Statistics & Probability",
+      "Machine Learning",
+    ],
+  },
+  {
+    title: "AI & Computer Vision",
+    skills: [
+      "Custom Model Training",
+      "EfficientNet",
+      "ONNX (Edge Deployment)",
+      "Offline PWA",
+      "Groq / LLM API",
+    ],
+  },
+  {
+    title: "Core & Tools",
+    skills: [
+      "C++",
+      "Algorithms & Data Structures",
+      "Graph Theory (BFS/DFS)",
+      "OOP",
+      "Git & GitHub",
+      "Vercel",
+      "Cloudinary",
+      "Google Colab",
+      "Jupyter",
+    ],
+  },
 ];
 
 const PROJECTS = [
   {
     name: "SAU Alumni Network",
     desc: "এই প্ল্যাটফর্ম — role-based auth, secure admin system সহ শূন্য বাজেটে তৈরি।",
-    href: "https://sau-alumni.vercel.app/", // এই সাইটের নিজের লিংক — homepage দিতে পারো
+    href: "https://sau-alumni.vercel.app/",
   },
   {
     name: "SAU Study Platform",
     desc: "React + Node + Supabase দিয়ে বানানো, ১৬২টি কোর্স কভার করে।",
-    href: "https://sau-eco-qstns.vercel.app/", // এখানে লাইভ লিংক বসাও
+    href: "https://sau-eco-qstns.vercel.app/",
   },
   {
     name: "Rice AI Doctor",
     desc: "ধানের রোগ শনাক্তকারী custom AI মডেল — অফলাইন PWA, বাংলাদেশি field data দিয়ে ট্রেইনড, ৯৪% accuracy।",
-    href: "https://rice-ai-app.vercel.app/", // GithubIcon repo লিংক বসাও
+    href: "https://rice-ai-app.vercel.app/",
   },
   {
-    name: "MONOPOLY game ",
-    desc: "A monopoly game based off bangladesh",
+    name: "Bangladesh Monopoly",
+    desc: "বাংলাদেশ থিমের real-time multiplayer Monopoly গেম — React + Socket.io।",
     href: "https://arghor-monopoly.vercel.app/",
+  },
+    {
+    name: "SAU EconHub",
+    desc: "কৃষি অর্থনীতির শিক্ষার্থীদের জন্য academic blog platform — AI সামারি, AI বাংলা অনুবাদ, KaTeX math, role-based access।",
+    href: "https://sau-blogs.vercel.app",
   },
 ];
 
-// SAU organization structured data — about page-e ekhane relevant
+// SAU organization structured data
 const aboutPageJsonLd = {
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
@@ -103,13 +168,40 @@ const aboutPageJsonLd = {
     "বাংলাদেশের কৃষি শিক্ষা ও গবেষণার অন্যতম প্রধান প্রতিষ্ঠান। মূলমন্ত্র: গবেষণা · শিক্ষা · সম্প্রসারণ।",
 };
 
+// Creator structured data — Google search-e naam + portfolio link
+const creatorJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Adnan Eram Argho",
+  jobTitle: "Full-Stack Developer & AI Engineer",
+  url: PORTFOLIO_URL,
+  alumniOf: {
+    "@type": "EducationalOrganization",
+    name: "Sher-e-Bangla Agricultural University",
+  },
+    knowsAbout: [
+    "Full-Stack Development",
+    "Next.js",
+    "React",
+    "Data Science",
+    "Machine Learning",
+    "Agricultural AI",
+    "Computer Vision",
+  ],
+  sameAs: [GITHUB_URL, LINKEDIN_URL],
+};
+
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      {/* About page structured data */}
+      {/* Structured data */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(creatorJsonLd) }}
       />
       <AnimatedSection>
         <h1 className="text-2xl font-bold sm:text-3xl">আমাদের সম্পর্কে</h1>
@@ -190,15 +282,42 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Skills */}
-            <div className="mt-5 flex flex-wrap gap-2">
-              {SKILLS.map((skill) => (
-                <span
-                  key={skill}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink/70"
+            {/* Stats */}
+            <div className="mt-5 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
+              {STATS.map((s) => (
+                <div
+                  key={s.label}
+                  className="rounded-xl border border-line bg-surface px-2 py-3"
                 >
-                  {skill}
-                </span>
+                  <p className="text-lg font-bold text-sau dark:text-emerald-300">
+                    {s.value}
+                  </p>
+                  <p className="mt-0.5 text-[11px] leading-tight text-ink/60">
+                    {s.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Skills (grouped) */}
+            <div className="mt-6 space-y-3">
+              <p className="text-sm font-semibold text-ink/80">দক্ষতা</p>
+              {SKILL_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-ink/40">
+                    {group.title}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {group.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink/70"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
 
@@ -212,11 +331,18 @@ export default function AboutPage() {
                   <Link
                     key={project.name}
                     href={project.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="group flex flex-col rounded-xl border border-line bg-surface p-4 transition-all hover:border-sau/30 hover:bg-sau/5"
                   >
-                    <span className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-                      {project.name}
-                      <ExternalLink className="h-3 w-3 text-ink/40 transition-transform group-hover:translate-x-0.5" />
+                    <span className="flex items-center justify-between gap-1.5 text-sm font-semibold text-ink">
+                      <span className="flex items-center gap-1.5">
+                        {project.name}
+                        <ExternalLink className="h-3 w-3 text-ink/40 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                      <span className="rounded-full bg-sau/10 px-2 py-0.5 text-[10px] font-medium text-sau dark:text-emerald-300">
+                        Live
+                      </span>
                     </span>
                     <span className="mt-1.5 text-xs leading-relaxed text-ink/60">
                       {project.desc}
@@ -226,29 +352,45 @@ export default function AboutPage() {
               </div>
             </div>
 
+            {/* Portfolio CTA */}
+            <Link
+              href={PORTFOLIO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-shimmer group mt-6 inline-flex items-center gap-2 rounded-xl bg-sau px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sau/15 transition-all hover:bg-sau-hover"
+            >
+              আমার পোর্টফোলিও দেখুন
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+
             {/* Socials */}
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-5 flex items-center gap-3">
               <Link
-                href="https://github.com/Adnan-Eram-Argho"
+                href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="GitHub"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink/60 transition-colors hover:border-sau/30 hover:text-sau"
               >
                 <GithubIcon className="h-4 w-4" />
               </Link>
               <Link
-                href="https://www.linkedin.com/in/md-adnan-eram-argho/"
+                href={LINKEDIN_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="LinkedIn"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink/60 transition-colors hover:border-sau/30 hover:text-sau"
               >
                 <LinkedinIcon className="h-4 w-4" />
               </Link>
               <Link
-                href="#"
+                href={PORTFOLIO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Portfolio"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink/60 transition-colors hover:border-sau/30 hover:text-sau"
               >
-                <Mail className="h-4 w-4" />
+                <Globe className="h-4 w-4" />
               </Link>
             </div>
 
