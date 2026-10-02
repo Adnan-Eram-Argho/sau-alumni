@@ -14,6 +14,7 @@ import {
   Phone,
   ArrowLeft,
   Lock,
+  Hash,
   User,
 } from "lucide-react";
 
@@ -33,6 +34,7 @@ function LinkedinIcon({ className }: { className?: string }) {
 type ProfileData = {
   id: string;
   full_name: string;
+  registration_number: string | null;
   avatar_url: string | null;
   bio: string | null;
   graduation_year: number | null;
@@ -61,7 +63,7 @@ const getProfile = cache(async (id: string) => {
   const { data } = await supabase
     .from("profiles")
     .select(
-      `id, full_name, avatar_url, bio, graduation_year, status,
+      `id, full_name, avatar_url, registration_number, bio, graduation_year, status,
        current_designation, current_company, linkedin_url,
        current_country, higher_study_institution, higher_study_program,
        is_verified, is_public, deleted_at,
@@ -282,6 +284,12 @@ export default async function ProfilePage({
               {p.graduation_year && (
                 <span className="rounded-full bg-base px-3 py-1 font-medium">
                   ব্যাচ {p.graduation_year}
+                </span>
+              )}
+              {p.registration_number && (
+                <span className="flex items-center gap-1.5 rounded-full bg-base px-3 py-1 font-medium">
+                  <Hash className="h-3.5 w-3.5 text-sau/60" />
+                  Reg {p.registration_number}
                 </span>
               )}
               {p.current_country && (

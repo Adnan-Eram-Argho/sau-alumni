@@ -5,13 +5,23 @@ import Image from "next/image";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
 import { COUNTRIES } from "@/utils/countries";
+import { BATCH_YEARS, BATCH_MIN, BATCH_MAX } from "@/utils/batch";
 import ImageUploader from "@/components/ImageUploader";
-import { X, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
+import {
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Save,
+  Hash,
+  Lock,
+} from "lucide-react";
 
 export type ProfileInitial = {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  registration_number: string | null;
   department_id: string | null;
   graduation_year: number | null;
   status: string | null;
@@ -24,6 +34,18 @@ export type ProfileInitial = {
   bio: string | null;
 };
 
+// Reg: khali rakha jabe (purano user, ekhono dai nai) —
+// kintu dile thik format-e dite hobe
+const registrationSchema = z
+  .string()
+  .trim()
+  .refine((v) => !v || (v.length >= 4 && v.length <= 30), {
+    message: "রেজিস্ট্রেশন নম্বর ৪–৩০ অক্ষরের হতে হবে",
+  })
+  .refine((v) => !v || /^[A-Za-z0-9\/-]+$/.test(v), {
+    message: "রেজিস্ট্রেশন নম্বরে শুধু সংখ্যা/অক্ষর/- ব্যবহার করো",
+  });
+
 const profileSchema = z.object({
   full_name: z
     .string()
@@ -31,14 +53,14 @@ const profileSchema = z.object({
     .min(2, { message: "নাম অন্তত ২ অক্ষরের হতে হবে" })
     .max(100, { message: "নাম খুব বড় হয়ে গেছে" }),
   avatar_url: z.string().nullable(),
+  registration_number: registrationSchema,
   department_id: z.string().nullable(),
   status: z.enum(["alumnus", "current_student"]),
   graduation_year: z
-    .number()
-    .int({ message: "বছরটা সংখ্যায় দাও" })
-    .min(1900, { message: "বছরটা দেখে নাও" })
-    .max(2105, { message: "বছরটা দেখে নাও" })
-    .nullable(),
+    .number({ message: "ব্যাচ বেছে নাও" })
+    .int()
+    .min(BATCH_MIN, { message: `ব্যাচ ${BATCH_MIN}–${BATCH_MAX} থেকে বেছে নাও` })
+    .max(BATCH_MAX, { message: `ব্যাচ ${BATCH_MIN}–${BATCH_MAX} থেকে বেছে নাও` }),
   current_country: z.string().min(1, { message: "দেশ বেছে নাও" }),
   current_designation: z.string().trim().max(100).nullable(),
   current_company: z.string().trim().max(100).nullable(),
@@ -70,7 +92,13 @@ export default function ProfileEditForm({
   departments: { id: string; name: string; facultyName: string | null }[];
 }) {
   const inputClass =
-    "mt-1 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
+    "mt-1 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10 disabled:opacity-50 disabled:cursor-not-allowed";
+
+  // Reg NIBEDON: ekbar set hole nijei bodlano jay na.
+  // initial theke asha value = already-set.
+  const [initialReg] = useState(initial?.registration_number ?? "");
+  const regLocked = initialReg !== "";
+  const [registrationNumber, setRegistrationNumber] = useState(initialReg);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     initial?.avatar_url ?? null
@@ -133,11 +161,12 @@ export default function ProfileEditForm({
     const result = profileSchema.safeParse({
       full_name: form.full_name,
       avatar_url: avatarUrl,
+      registration_number: registrationNumber || null,
       department_id: form.department_id || null,
       status: form.status,
       graduation_year: form.graduation_year
         ? Number(form.graduation_year)
-        : null,
+        : NaN,
       current_country: form.current_country,
       current_designation: form.current_designation || null,
       current_company: form.current_company || null,
@@ -160,6 +189,12 @@ export default function ProfileEditForm({
         .upsert({ id: userId, ...result.data });
 
       if (saveError) {
+        if (saveError.message.includes("duplicate key")) {
+          setError(
+            "এই রেজিস্ট্রেশন নম্বর অন্য কারো — নম্বরটা যাচাই করে আবার দাও।"
+          );
+          return;
+        }
         console.error("Profile save failed:", saveError.message);
         setError("সেভ করতে সমস্যা হলো। একটু পরে আবার চেষ্টা করো।");
         return;
@@ -257,6 +292,51 @@ export default function ProfileEditForm({
         />
       </div>
 
+      {/* রেজিস্ট্রেশন নম্বর — ekbar set hole locked */}
+      <div>
+        <label
+          htmlFor="registration_number"
+          className="block text-sm font-medium"
+        >
+          রেজিস্ট্রেশন নম্বর{" "}
+          <span className="text-ink/40">(সবাই দেখতে পাবে)</span>
+        </label>
+        <div className="relative">
+          <Hash className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
+          <input
+            id="registration_number"
+            type="text"
+            disabled={regLocked}
+            value={regLocked ? initialReg : registrationNumber}
+            onChange={(e) => setRegistrationNumber(e.target.value)}
+            placeholder="e.g. 2020123456"
+            className={`${inputClass} pl-10`}
+          />
+          {regLocked && (
+            <span className="absolute right-3.5 top-1/2 flex -translate-y-1/2 items-center gap-1 text-xs text-ink/40">
+              <Lock className="h-3 w-3" />
+              লকড
+            </span>
+          )}
+        </div>
+        {regLocked ? (
+          <p className="mt-1.5 text-xs text-ink/40">
+            একবার সেট হলে নিজে বদলানো যায় না। ভুল হয়ে থাকলে{" "}
+            <a
+              href="/dashboard"
+              className="font-medium text-sau hover:underline dark:text-emerald-300"
+            >
+              আমাকে verified বানাও
+            </a>{" "}
+            অনুরোধে লিখে জানাও — admin রিসেট করে দেবে।
+          </p>
+        ) : (
+          <p className="mt-1.5 text-xs text-ink/40">
+            তোমার SAU রেজিস্ট্রেশন নম্বর — এক নম্বরে একটাই অ্যাকাউন্ট
+          </p>
+        )}
+      </div>
+
       <div>
         <label htmlFor="department_id" className="block text-sm font-medium">
           বিভাগ
@@ -311,14 +391,19 @@ export default function ProfileEditForm({
               (শিক্ষার্থী হলে সম্ভাব্য শেষের বছর)
             </span>
           </label>
-          <input
+          <select
             id="graduation_year"
-            type="number"
             value={form.graduation_year}
             onChange={(e) => set("graduation_year", e.target.value)}
-            placeholder="e.g. 2020"
             className={inputClass}
-          />
+          >
+            <option value="">— ব্যাচ বেছে নাও —</option>
+            {BATCH_YEARS.map((y) => (
+              <option key={y} value={y}>
+                ব্যাচ {y}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

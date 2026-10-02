@@ -23,6 +23,7 @@ const actionSchema = z.object({
     "unarchive_notice",
     "delete_notice",
     "delete_homepage_image",
+    "reset_registration_number",
   ]),
   target_id: z.string().uuid(),
   value: z.boolean().optional(),
@@ -258,6 +259,32 @@ export async function POST(request: Request) {
     await writeAudit(adminClient, actorId, action, "homepage_images", target_id);
     return json({ ok: true });
   }
+
+  // ---------- Registration number reset (admin) ----------
+  // Bhul/boxo khetre: admin reg khali kore dile user nijei
+  // notun (thik) reg profile-edit theke boshate parbe
+  if (action === "reset_registration_number") {
+    const touch = await getTouchableProfile(adminClient, target_id, actorRole);
+    if (!touch.ok) {
+      return NextResponse.json({ error: touch.error }, { status: touch.status });
+    }
+
+    const { error: regError } = await adminClient
+      .from("profiles")
+      .update({ registration_number: null })
+      .eq("id", target_id);
+
+    if (regError) {
+      console.error("Reg number reset failed:", regError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+
+    await writeAudit(adminClient, actorId, action, "profiles", target_id, {
+      reason: "reg_reset",
+    });
+    return NextResponse.json({ ok: true });
+  }
+
 
   // ---------- Verification review ----------
   if (action === "approve_verification" || action === "reject_verification") {

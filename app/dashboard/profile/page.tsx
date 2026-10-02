@@ -23,7 +23,7 @@ export default async function ProfileEditPage() {
     supabase
       .from("profiles")
       .select(
-        `id, full_name, avatar_url, department_id, graduation_year, status,
+        `id, full_name, avatar_url, registration_number, department_id, graduation_year, status,
          current_designation, current_company, linkedin_url,
          current_country, higher_study_institution, higher_study_program, bio`
       )

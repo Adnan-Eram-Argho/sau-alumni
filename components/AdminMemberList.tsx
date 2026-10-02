@@ -15,6 +15,8 @@ import {
   Loader2,
   AlertCircle,
   GraduationCap,
+  Hash,
+  RotateCw,
 } from "lucide-react";
 import { BATCH_YEARS } from "@/utils/batch";
 
@@ -28,6 +30,7 @@ type Member = {
   email: string;
   joined: string;
   batch: number | null;
+  registration_number: string | null;
 };
 
 const roleConfig: Record<
@@ -181,6 +184,12 @@ export default function AdminMemberList({
                       <span>ব্যাচ {m.batch}</span>
                     </span>
                   )}
+                  {m.registration_number && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-line bg-base px-2.5 py-0.5 text-xs font-medium text-ink/60">
+                      <Hash className="h-3 w-3" />
+                      <span>Reg {m.registration_number}</span>
+                    </span>
+                  )}
                   {m.deleted && (
                     <span className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-100/80 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400">
                       <PauseCircle className="h-3 w-3" />
@@ -204,6 +213,25 @@ export default function AdminMemberList({
                       {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                       <CheckCircle2 className="h-3.5 w-3.5 text-sau" />
                       <span>{m.is_verified ? "Unverify" : "Verify"}</span>
+                    </button>
+                  )}
+
+                  {m.registration_number && !m.deleted && (
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `${m.full_name}-এর রেজিস্ট্রেশন নম্বর (${m.registration_number}) রিসেট করবে? ভুল/ভুয়া নম্বরের ক্ষেত্রে করুন — এরপর ওই মানুষ নিজে সঠিক নম্বর দিতে পারবে, আর আসল মালিক এই নম্বর ব্যবহার করতে পারবে।`
+                          )
+                        ) {
+                          act("reset_registration_number", m.id);
+                        }
+                      }}
+                      disabled={busy}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 font-medium transition-colors hover:border-sau/40 hover:bg-base disabled:opacity-50"
+                    >
+                      <RotateCw className="h-3.5 w-3.5 text-gold" />
+                      <span>Reg রিসেট</span>
                     </button>
                   )}
 

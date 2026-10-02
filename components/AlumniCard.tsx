@@ -8,6 +8,7 @@ export type AlumniCardData = {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  registration_number: string | null;
   graduation_year: number | null;
   status: string | null;
   current_designation: string | null;
@@ -90,6 +91,9 @@ export default function AlumniCard({
           <p className="mt-1 truncate text-sm text-ink/50">
             {deptName ?? "SAU"}
             {profile.graduation_year ? ` · ব্যাচ ${profile.graduation_year}` : ""}
+            {profile.registration_number
+              ? ` · Reg ${profile.registration_number}`
+              : ""}
           </p>
         </div>
 

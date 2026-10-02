@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/client";
-import { UserPlus, Loader2, AlertCircle } from "lucide-react";
+import { UserPlus, Loader2, AlertCircle, Hash } from "lucide-react";
 import { COUNTRIES } from "@/utils/countries";
+import { BATCH_YEARS, BATCH_MIN, BATCH_MAX } from "@/utils/batch";
 
 const signupSchema = z.object({
   fullName: z
@@ -20,14 +21,21 @@ const signupSchema = z.object({
     .min(10, { message: "পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে" })
     .max(72, { message: "পাসওয়ার্ড ৭২ অক্ষরের মধ্যে রাখুন" }),
   departmentId: z.string().min(1, { message: "বিভাগ বেছে নাও" }),
+  registrationNumber: z
+    .string()
+    .trim()
+    .min(4, { message: "রেজিস্ট্রেশন নম্বর অন্তত ৪ অক্ষরের" })
+    .max(30, { message: "রেজিস্ট্রেশন নম্বর সর্বোচ্চ ৩০ অক্ষরের" })
+    .regex(/^[A-Za-z0-9\/-]+$/, {
+      message: "রেজিস্ট্রেশন নম্বরে শুধু সংখ্যা/অক্ষর/- ব্যবহার করো",
+    }),
   status: z.enum(["alumnus", "current_student"]),
   currentCountry: z.string().min(1, { message: "দেশ বেছে নাও" }),
   graduationYear: z
-    .number()
-    .int({ message: "বছরটা সংখ্যায় দাও" })
-    .min(1900, { message: "বছরটা দেখে নাও" })
-    .max(2105, { message: "বছরটা দেখে নাও" })
-    .nullable(),
+    .number({ message: "ব্যাচ বেছে নাও" })
+    .int()
+    .min(BATCH_MIN, { message: `ব্যাচ ${BATCH_MIN}–${BATCH_MAX} থেকে বেছে নাও` })
+    .max(BATCH_MAX, { message: `ব্যাচ ${BATCH_MIN}–${BATCH_MAX} থেকে বেছে নাও` }),
   currentDesignation: z.string().trim().max(100).nullable(),
   currentCompany: z.string().trim().max(100).nullable(),
   linkedinUrl: z
@@ -46,6 +54,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
 
   const [departments, setDepartments] = useState<
     { id: string; name: string; facultyName: string | null }[]
@@ -55,7 +64,6 @@ export default function SignupPage() {
   const [currentCountry, setCurrentCountry] = useState("Bangladesh");
   const [batchYear, setBatchYear] = useState("");
 
-  const [skipBatch, setSkipBatch] = useState(false);
   const [skipCareer, setSkipCareer] = useState(false);
   const [designation, setDesignation] = useState("");
   const [company, setCompany] = useState("");
@@ -99,9 +107,10 @@ export default function SignupPage() {
       email,
       password,
       departmentId,
+      registrationNumber,
       status,
       currentCountry,
-      graduationYear: skipBatch ? null : batchYear ? Number(batchYear) : null,
+      graduationYear: batchYear ? Number(batchYear) : NaN,
       currentDesignation: skipCareer ? null : designation || null,
       currentCompany: skipCareer ? null : company || null,
       linkedinUrl: skipLinkedin ? null : linkedin || null,
@@ -145,6 +154,7 @@ export default function SignupPage() {
         const { error: insertError } = await supabase.from("profiles").insert({
           id: data.user.id,
           full_name: result.data.fullName,
+          registration_number: result.data.registrationNumber,
           department_id: result.data.departmentId,
           graduation_year: result.data.graduationYear,
           status: result.data.status,
@@ -157,7 +167,24 @@ export default function SignupPage() {
         });
 
         if (insertError) {
+          // Duplicate reg number — unique index dhore feleche.
+          // Account toiri hoyeche, kintu profile nei. Signout kore
+          // clear message dei — user thik reg diye abar ashbe /
+          // login kore profile edit theke reg dibe (self-heal).
+          if (insertError.message.includes("duplicate key")) {
+            await supabase.auth.signOut();
+            setError(
+              "এই রেজিস্ট্রেশন নম্বর দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট আছে। নম্বরটা যাচাই করে আবার চেষ্টা করুন — বা লগইন করে প্রোফাইল সম্পূর্ণ করুন।"
+            );
+            return;
+          }
+
           console.error("Profile insert failed:", insertError.message);
+          setError(
+            "অ্যাকাউন্ট তৈরি হলো কিন্তু প্রোফাইল সেভ হয়নি। লগইন করে ড্যাশবোর্ড থেকে প্রোফাইল তৈরি করুন।"
+          );
+          router.push("/auth/login");
+          return;
         }
 
         const { error: contactError } = await supabase
@@ -180,7 +207,7 @@ export default function SignupPage() {
   }
 
   const inputClass =
-    "mt-1 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
+    "mt-1 w-full rounded-xl border border-line bg-surface px-4 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10 disabled:opacity-50";
 
   const sectionTitle = "text-sm font-semibold text-sau dark:text-emerald-300";
   const laterBox =
@@ -296,6 +323,32 @@ export default function SignupPage() {
             </div>
 
             <div>
+              <label
+                htmlFor="registrationNumber"
+                className="block text-sm font-medium"
+              >
+                রেজিস্ট্রেশন নম্বর{" "}
+                <span className="text-ink/35">(সবাই দেখতে পাবে)</span>
+              </label>
+              <div className="relative">
+                <Hash className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/30" />
+                <input
+                  id="registrationNumber"
+                  type="text"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                  placeholder="e.g. 2020123456"
+                  className={`${inputClass} pl-10`}
+                  required
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-ink/40">
+                তোমার SAU রেজিস্ট্রেশন নম্বর — এক নম্বরে একটাই অ্যাকাউন্ট খোলা
+                যায়
+              </p>
+            </div>
+
+            <div>
               <span className="block text-sm font-medium">আমি একজন</span>
               <div className="mt-2 flex flex-wrap gap-4 text-sm">
                 <label className="flex cursor-pointer items-center gap-2">
@@ -323,6 +376,29 @@ export default function SignupPage() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
+                <label htmlFor="batch" className="block text-sm font-medium">
+                  ব্যাচের বছর
+                  <span className="block text-xs font-normal text-ink/40">
+                    (শিক্ষার্থী হলে সম্ভাব্য শেষের বছর)
+                  </span>
+                </label>
+                <select
+                  id="batch"
+                  value={batchYear}
+                  onChange={(e) => setBatchYear(e.target.value)}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">— ব্যাচ বেছে নাও —</option>
+                  {BATCH_YEARS.map((y) => (
+                    <option key={y} value={y}>
+                      ব্যাচ {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label htmlFor="country" className="block text-sm font-medium">
                   বর্তমানে কোথায় আছো?
                 </label>
@@ -338,32 +414,6 @@ export default function SignupPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between">
-                  <label htmlFor="batch" className="block text-sm font-medium">
-                    ব্যাচের বছর
-                  </label>
-                  <label className={laterBox}>
-                    <input
-                      type="checkbox"
-                      checked={skipBatch}
-                      onChange={(e) => setSkipBatch(e.target.checked)}
-                      className="accent-sau"
-                    />
-                    পরে দেব
-                  </label>
-                </div>
-                <input
-                  id="batch"
-                  type="number"
-                  disabled={skipBatch}
-                  value={skipBatch ? "" : batchYear}
-                  onChange={(e) => setBatchYear(e.target.value)}
-                  placeholder="e.g. 2020"
-                  className={inputClass}
-                />
               </div>
             </div>
 
@@ -383,10 +433,7 @@ export default function SignupPage() {
               </div>
               <div className="mt-3 grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="designation"
-                    className="block text-sm font-medium"
-                  >
+                  <label htmlFor="designation" className="block text-sm font-medium">
                     পদবি (Designation)
                   </label>
                   <input
@@ -400,10 +447,7 @@ export default function SignupPage() {
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="company"
-                    className="block text-sm font-medium"
-                  >
+                  <label htmlFor="company" className="block text-sm font-medium">
                     প্রতিষ্ঠান / কোম্পানি
                   </label>
                   <input
@@ -422,10 +466,7 @@ export default function SignupPage() {
             {/* LinkedIn */}
             <div>
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="linkedin"
-                  className="block text-sm font-medium"
-                >
+                <label htmlFor="linkedin" className="block text-sm font-medium">
                   LinkedIn প্রোফাইলের লিংক
                 </label>
                 <label className={laterBox}>
@@ -470,10 +511,7 @@ export default function SignupPage() {
               </div>
               <div className="mt-3 grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="higherProgram"
-                    className="block text-sm font-medium"
-                  >
+                  <label htmlFor="higherProgram" className="block text-sm font-medium">
                     প্রোগ্রাম
                   </label>
                   <input

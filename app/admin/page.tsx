@@ -26,7 +26,7 @@ export default async function AdminPage() {
     adminClient
       .from("profiles")
       .select(
-        "id, full_name, role, is_permanent, is_verified, deleted_at, created_at, graduation_year"
+        "id, full_name, role, is_permanent, is_verified, deleted_at, created_at, graduation_year, registration_number"
       )
       .order("created_at", { ascending: false })
       .limit(300),
@@ -56,6 +56,7 @@ export default async function AdminPage() {
     email: emailMap[m.id] ?? "—",
     joined: m.created_at?.slice(0, 10) ?? "",
     batch: m.graduation_year ?? null,
+    registration_number: m.registration_number ?? null,
   }));
 
   return (
