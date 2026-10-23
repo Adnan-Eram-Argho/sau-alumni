@@ -13,14 +13,9 @@ export async function GET() {
     const latencyMs = Math.round(performance.now() - start);
 
     if (error) {
+      console.error("Health check database query failed:", error);
       return NextResponse.json(
-        {
-          status: "unhealthy",
-          db: "error",
-          error: error.message,
-          latencyMs,
-          timestamp: new Date().toISOString(),
-        },
+        { status: "unhealthy" },
         {
           status: 500,
           headers: {
@@ -45,16 +40,9 @@ export async function GET() {
       }
     );
   } catch (err: unknown) {
-    const latencyMs = Math.round(performance.now() - start);
-    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("Health check failed:", err);
     return NextResponse.json(
-      {
-        status: "unhealthy",
-        db: "error",
-        error: message,
-        latencyMs,
-        timestamp: new Date().toISOString(),
-      },
+      { status: "unhealthy" },
       {
         status: 500,
         headers: {

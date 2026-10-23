@@ -33,8 +33,15 @@ export async function middleware(request: NextRequest) {
   // ---- Rate limit: API mutation routes ----
   if (isApiRoute && isMutation && pathname !== "/api/health" && apiMutationLimiter) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const { success } = await apiMutationLimiter.limit(ip);
-    if (!success) {
+    let allowed = true;
+    try {
+      const { success } = await apiMutationLimiter.limit(ip);
+      allowed = success;
+    } catch (e) {
+      console.error("Rate limiter unavailable — failing open:", e);
+      allowed = true;
+    }
+    if (!allowed) {
       return NextResponse.json(
         {
           error: "too_many_requests",
@@ -53,8 +60,15 @@ export async function middleware(request: NextRequest) {
 
   if (isAuthPage && authPagesLimiter) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const { success } = await authPagesLimiter.limit(ip);
-    if (!success) {
+    let allowed = true;
+    try {
+      const { success } = await authPagesLimiter.limit(ip);
+      allowed = success;
+    } catch (e) {
+      console.error("Rate limiter unavailable — failing open:", e);
+      allowed = true;
+    }
+    if (!allowed) {
       return new NextResponse(
         "অনেকবার চেষ্টা করা হয়েছে। এক মিনিট পরে আবার চেষ্টা করুন।",
         { status: 429 }

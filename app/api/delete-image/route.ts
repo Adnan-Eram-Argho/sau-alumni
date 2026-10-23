@@ -46,6 +46,12 @@ export async function POST(request: Request) {
     return json({ error: "bad_request" }, { status: 400 });
   }
 
+  const url = new URL(parsed.data.url);
+  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname;
+  if (url.hostname !== supabaseHost) {
+    return json({ error: "bad_url" }, { status: 400 });
+  }
+
   // 4) URL theke bucket + path ber kori
   // Form: https://<ref>.supabase.co/storage/v1/object/public/<bucket>/<path>
   let bucket: string | null = null;

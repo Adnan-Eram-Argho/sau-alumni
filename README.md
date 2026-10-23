@@ -99,7 +99,7 @@ Analytics: **Vercel Analytics** (`@vercel/analytics/next`) is integrated in the 
 | DB / Auth / Storage / Realtime | Supabase | Singapore region; RLS is the main security wall |
 | Deployment | Vercel (Hobby) | auto-deploy on push; 2 cron jobs allowed if needed |
 | PWA | `@serwist/next` | `app/sw.ts` → `public/sw.js`; disabled in dev |
-| Rate limiting | Upstash Redis | login/signup pages, 10 req/min/IP; fails soft |
+| Rate limiting | Upstash Redis | login/signup pages, 10 req/min/IP; fails open on Upstash errors |
 | Markdown | react-markdown + rehype-sanitize | never `dangerouslySetInnerHTML` |
 | Validation | Zod | every form and every API route |
 | Country flags | flag-icons (SVG) | emoji flags break on Windows |
@@ -306,14 +306,20 @@ CREATE VIEW public_contact_info AS
 SELECT pc.profile_id, pc.email,
   CASE
     WHEN pc.phone_visibility = 'public' THEN pc.phone_number
-    WHEN pc.phone_visibility = 'members_only' AND auth.uid() IS NOT NULL THEN pc.phone_number
+    WHEN pc.phone_visibility = 'members_only'
+     AND auth.uid() IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM profiles caller
+       WHERE caller.id = auth.uid()
+         AND caller.deleted_at IS NOT NULL
+     ) THEN pc.phone_number
     ELSE NULL
   END AS phone_number
 FROM profile_contacts pc
 JOIN profiles p ON p.id = pc.profile_id
 WHERE (p.is_public = true AND p.deleted_at IS NULL) OR pc.profile_id = auth.uid();
 ```
-Runs with **owner privileges (no security_invoker — deliberate, see §24)** so its WHERE/CASE is the single access rule; the raw table stays owner-RLS-locked. `GRANT SELECT` to anon + authenticated. Soft-deleted (suspended) members are cleanly hidden from public directory views.
+Runs with **owner privileges (no security_invoker — deliberate, see §24)** so its WHERE/CASE is the single access rule; the raw table stays owner-RLS-locked. `GRANT SELECT` to anon + authenticated. Suspended members cannot read other members' `members_only` phone numbers, but can still read their own contact row.
 
 ### notices
 `id` · `author_id` → profiles · `faculty_id`, `department_id` (null = everyone) · `title` · `slug` unique (auto from title) · `content` (markdown) · `status` (`draft`/`published`, default draft) · `pinned` bool · `publish_at` (set on publish) · `image_url` · `created_at`
@@ -444,11 +450,11 @@ Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (
 2. **DB trigger** `protect_profiles_privilege` (§7) — even a buggy service call cannot escalate privileges.
 3. **`requireAdmin()`** (`utils/admin.ts`) — every privileged API call re-verifies the caller's role **from the database** (never client state), then hands out a service-role client.
 4. **Zod** on every request body; action enums are closed lists.
-5. **Audit log** — every admin mutation recorded (actor, action, target, metadata) with explicit error handling and failure alerting.
+5. **Audit log** — best-effort: an audit insert failure is logged (structured `console.error`) but does NOT abort the completed admin action — by design.
 6. **CSP + security headers** in `next.config.ts` (X-Frame-Options DENY, nosniff, HSTS, Permissions-Policy, Referrer-Policy; CSP `default-src 'self'`, img-src includes the Supabase host derived from env, connect-src includes Supabase + realtime wss; dev adds eval+ws localhost).
 7. **Rate limiting**:
    - Auth pages: 10 req/min/IP (`authPagesLimiter` via Upstash Redis).
-   - API mutation routes (`/api/admin`, `/api/notices`, `/api/delete-image`): 30 req/min/IP (`apiMutationLimiter` via Upstash Redis).
+   - API mutation routes (`/api/admin`, `/api/notices`, `/api/delete-image`): 30 req/min/IP (`apiMutationLimiter` via Upstash Redis); limiter errors fail open and are logged.
 8. **CSRF Origin Validation**: middleware checks the `Origin` header against `Host` / `x-forwarded-host` for all mutation methods (`POST`, `PUT`, `PATCH`, `DELETE`) on API endpoints.
 9. **Strict Content-Type verification**: all JSON API mutation endpoints reject requests that do not declare `application/json` (HTTP 415).
 10. **`Cache-Control: no-store` headers**: guaranteed across all mutating and monitoring API endpoints to prevent stale CDN/browser caching.
@@ -678,6 +684,7 @@ To eliminate abrupt content popping and provide feedback during network latency 
 22. **Admin suspend / restore semantics** — Admin `suspend` only sets `deleted_at = now()`, and `restore` only sets `deleted_at = null`. Neither action modifies `is_public`, preserving user privacy preference across suspension and restoration.
 23. **Directory Country Filter DB-Driven** — The country dropdown in `/directory` intentionally queries distinct countries with registered public alumni rather than rendering an exhaustive static list.
 24. **Admin Member List Memory Guard** — `/admin` queries limit `profiles` and `profile_contacts` to 300 rows as a memory safety guard for Supabase free-tier egress. Client-side batch filtering applies to these loaded records.
+25. **Rate limiters fail open by design** — if Upstash is unavailable, the request is logged and allowed so a Redis outage does not take down the site; abuse protection is reduced until Upstash recovers.
 
 ---
 
