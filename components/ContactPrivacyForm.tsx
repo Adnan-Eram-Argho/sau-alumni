@@ -15,6 +15,7 @@ const contactSchema = z.object({
       message: "ফোন নম্বরটা দেখে নাও (শুধু সংখ্যা, +, -)",
     }),
   phone_visibility: z.enum(["private", "members_only", "public"]),
+  blood_donation_contact_ok: z.boolean(),
   is_public: z.boolean(),
 });
 
@@ -26,7 +27,11 @@ export default function ContactPrivacyForm({
 }: {
   userId: string;
   email: string;
-  initial: { phone_number: string; phone_visibility: string };
+  initial: {
+    phone_number: string;
+    phone_visibility: string;
+    blood_donation_contact_ok: boolean;
+  };
   isPublic: boolean;
 }) {
   const [phone, setPhone] = useState(initial.phone_number);
@@ -37,6 +42,9 @@ export default function ContactPrivacyForm({
       : "private"
   );
   const [profilePublic, setProfilePublic] = useState(isPublic);
+  const [bloodDonationContactOk, setBloodDonationContactOk] = useState(
+    initial.blood_donation_contact_ok
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,6 +56,7 @@ export default function ContactPrivacyForm({
     const result = contactSchema.safeParse({
       phone_number: phone.trim() || "",
       phone_visibility: visibility,
+      blood_donation_contact_ok: bloodDonationContactOk,
       is_public: profilePublic,
     });
 
@@ -68,6 +77,7 @@ export default function ContactPrivacyForm({
           email: email,
           phone_number: result.data.phone_number || null,
           phone_visibility: result.data.phone_visibility,
+          blood_donation_contact_ok: result.data.blood_donation_contact_ok,
           updated_at: new Date().toISOString(),
         });
 
@@ -167,6 +177,19 @@ export default function ContactPrivacyForm({
             সবাই
           </label>
         </div>
+
+        <label className="mt-5 flex cursor-pointer items-start gap-2.5 text-sm">
+          <input
+            type="checkbox"
+            checked={bloodDonationContactOk}
+            onChange={(e) => {
+              setBloodDonationContactOk(e.target.checked);
+              setSuccess(false);
+            }}
+            className="mt-0.5 accent-sau"
+          />
+          <span>জরুরি রক্তের প্রয়োজনে অ্যালুমনাই নেটওয়ার্ক আমার সাথে যোগাযোগ করতে পারবে</span>
+        </label>
       </div>
 
       {/* Profile visibility */}

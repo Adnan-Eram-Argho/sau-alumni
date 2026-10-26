@@ -53,7 +53,7 @@ export default async function ContactSettingsPage() {
   // RLS owner policy; onnoder jonno to VIEW ache)
   const { data: contact } = await supabase
     .from("profile_contacts")
-    .select("email, phone_number, phone_visibility")
+    .select("email, phone_number, phone_visibility, blood_donation_contact_ok")
     .eq("profile_id", user.id)
     .maybeSingle();
 
@@ -72,6 +72,7 @@ export default async function ContactSettingsPage() {
         initial={{
           phone_number: contact?.phone_number ?? "",
           phone_visibility: contact?.phone_visibility ?? "private",
+          blood_donation_contact_ok: contact?.blood_donation_contact_ok ?? false,
         }}
         isPublic={profileRow.is_public ?? true}
       />

@@ -296,7 +296,9 @@ Seeded: Agricultural Economics. **Never hardcode faculty/department names in cod
 Indexes: department_id, graduation_year, status, partial (is_public), current_country, GIN(search_vector), GIN trigram(full_name).
 
 ### profile_contacts (contact privacy — column-level by design)
-`profile_id` uuid PK → profiles · `email` text NOT NULL · `phone_number` text · `phone_visibility` (`public`/`members_only`/`private`, default **private**) · `updated_at`
+`profile_id` uuid PK → profiles · `email` text NOT NULL · `phone_number` text · `phone_visibility` (`public`/`members_only`/`private`, default **private**) · `blood_donation_contact_ok` bool NOT NULL DEFAULT false · `updated_at`
+
+`blood_donation_contact_ok` is owner-only under the table's existing RLS and is an opt-in flag for future blood-donation outreach. It is not included in `public_contact_info` or any other view. Signup collects the phone, visibility choice, and consent; members can later update phone and consent in contact settings.
 
 **The app never reads this table directly for others** — it queries the VIEW:
 
@@ -418,7 +420,7 @@ Storage policies (on `storage.objects`):
 
 Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (owner's decision — instant signup; invite tokens are the planned gate instead), minimum password 10, leaked-password protection ON, anonymous sign-in OFF, refresh token rotation ON.
 
-**Signup (`app/auth/signup/page.tsx`):** Zod (name >=2, email, password 10-72, blood group required; জানা নেই stores no row) → `supabase.auth.signUp` (instant session; name stored in user metadata) → client inserts `profiles`, `profile_contacts`, and a `profile_blood_groups` row for a known group under owner-only RLS → redirect `/`.
+**Signup (`app/auth/signup/page.tsx`):** Zod (name >=2, email, password 10-72, required phone, visibility, and blood group; জানা নেই stores no blood-group row) → `supabase.auth.signUp` (instant session; name stored in user metadata) → client inserts `profiles`, `profile_contacts` with phone, visibility, and opt-in consent, plus a `profile_blood_groups` row for a known group under owner-only RLS → redirect `/`.
 
 **Login:** `signInWithPassword`; generic error message (never reveals whether the email exists). Supports `?next=/path` redirect (validated: must start with `/` and not `//`).
 
@@ -678,7 +680,7 @@ To eliminate abrupt content popping and provide feedback during network latency 
 11. **The middleware matcher** excludes `_next/static`, `_next/image`, favicon, manifest.json, sw.js, swe-worker, and image extensions — don't break this or the PWA/directory will misbehave.
 12. **`current_country` is a fixed dropdown** (`utils/countries.ts`) — free text would shatter filters/aggregation.
 13. **Contact info must be read through the `public_contact_info` VIEW**, never `profile_contacts`. Blood group must be read through `members_only_blood_groups`, never `profile_blood_groups`; the blood group view has no anon grant.
-14. **Signup is instant** (no email confirmation) and inserts two rows client-side (`profiles`, `profile_contacts`); the dashboard self-heals a missing row.
+14. **Signup is instant** (no email confirmation) and inserts `profiles` and `profile_contacts` rows client-side, plus `profile_blood_groups` when a group is chosen; the dashboard self-heals a missing profile row.
 15. **The contact VIEW intentionally has no `security_invoker`** — see §24; adding it back will blank everyone's email in the directory.
 16. **Batch years are auto-computed** — `utils/batch.ts` derives 2001 → `currentYear + 1`. No DB table, no admin UI; a new year appears automatically. Don't "fix" this into a database table.
 17. **Password reset emails are rate-limited hard** (~2-3/hour on free tier by default) — repeated testing silently fails as "CORS did not succeed" `NetworkError`. Raise the limit in Supabase (Auth → Email rate limit, e.g. 30/hour) and test sparingly. The reset link must be opened in the **SAME browser** (PKCE) — other browsers get the friendly "link expired" screen.

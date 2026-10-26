@@ -16,6 +16,15 @@ const signupSchema = z.object({
     .min(2, { message: "নাম অন্তত ২ অক্ষরের হতে হবে" })
     .max(100, { message: "নাম খুব বড় হয়ে গেছে" }),
   email: z.string().trim().email({ message: "সঠিক ইমেইল ঠিকানা দিন" }),
+  phoneNumber: z.string().trim().refine(
+    (value) => {
+      const digits = value.match(/[0-9]/g)?.length ?? 0;
+      return /^\+?[0-9 -]+$/.test(value) && digits >= 7 && digits <= 15;
+    },
+    { message: "মোবাইল নম্বর ৭–১৫ সংখ্যার দিন; শুধু সংখ্যা, +, স্পেস বা ড্যাশ ব্যবহার করুন" }
+  ),
+  phoneVisibility: z.enum(["private", "members_only", "public"]),
+  bloodDonationContactOk: z.boolean(),
   password: z
     .string()
     .min(10, { message: "পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে" })
@@ -56,6 +65,9 @@ export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneVisibility, setPhoneVisibility] = useState<"private" | "members_only" | "public">("private");
+  const [bloodDonationContactOk, setBloodDonationContactOk] = useState(false);
   const [password, setPassword] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [bloodGroup, setBloodGroup] = useState("");
@@ -109,6 +121,9 @@ export default function SignupPage() {
     const result = signupSchema.safeParse({
       fullName,
       email,
+      phoneNumber,
+      phoneVisibility,
+      bloodDonationContactOk,
       password,
       bloodGroup,
       departmentId,
@@ -197,6 +212,9 @@ export default function SignupPage() {
           .insert({
             profile_id: data.user.id,
             email: result.data.email,
+            phone_number: result.data.phoneNumber,
+            phone_visibility: result.data.phoneVisibility,
+            blood_donation_contact_ok: result.data.bloodDonationContactOk,
           });
 
         if (contactError) {
@@ -295,6 +313,44 @@ export default function SignupPage() {
                 required
               />
             </div>
+
+            <div>
+              <label htmlFor="phoneNumber" className="block text-sm font-medium">মোবাইল নম্বর</label>
+              <input
+                id="phoneNumber"
+                type="tel"
+                autoComplete="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="e.g. +880 1XXX-XXXXXX"
+                className={inputClass}
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phoneVisibility" className="block text-sm font-medium">ফোন নম্বর দেখাবে কাকে?</label>
+              <select
+                id="phoneVisibility"
+                value={phoneVisibility}
+                onChange={(e) => setPhoneVisibility(e.target.value as typeof phoneVisibility)}
+                className={inputClass}
+              >
+                <option value="private">কারো না (শুধু আমি নিজে)</option>
+                <option value="members_only">শুধু লগইন-করা সদস্যরা</option>
+                <option value="public">সবাই</option>
+              </select>
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm">
+              <input
+                type="checkbox"
+                checked={bloodDonationContactOk}
+                onChange={(e) => setBloodDonationContactOk(e.target.checked)}
+                className="mt-0.5 accent-sau"
+              />
+              <span>জরুরি রক্তের প্রয়োজনে অ্যালুমনাই নেটওয়ার্ক আমার সাথে যোগাযোগ করতে পারবে</span>
+            </label>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium">
