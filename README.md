@@ -321,6 +321,9 @@ WHERE (p.is_public = true AND p.deleted_at IS NULL) OR pc.profile_id = auth.uid(
 ```
 Runs with **owner privileges (no security_invoker — deliberate, see §24)** so its WHERE/CASE is the single access rule; the raw table stays owner-RLS-locked. `GRANT SELECT` to anon + authenticated. Suspended members cannot read other members' `members_only` phone numbers, but can still read their own contact row.
 
+### profile_blood_groups (members-only profile data)
+`profile_id` uuid PK → profiles · `blood_group` text (`A+`, `A-`, `B+`, `B-`, `O+`, `O-`, `AB+`, `AB-`; NULL = জানা নেই) · `updated_at`. Raw rows have owner-only RLS. The `members_only_blood_groups` view has no anon/PUBLIC grant and returns data only to authenticated callers: active members can read public, non-suspended profiles; each caller can still read their own row, including when suspended. Missing rows mean জানা নেই. Blood group is excluded from `profiles`, `public_contact_info`, directory fields, and `search_vector`.
+
 ### notices
 `id` · `author_id` → profiles · `faculty_id`, `department_id` (null = everyone) · `title` · `slug` unique (auto from title) · `content` (markdown) · `status` (`draft`/`published`, default draft) · `pinned` bool · `publish_at` (set on publish) · `image_url` · `created_at`
 
@@ -367,6 +370,8 @@ RLS is ON for **every** table. Summary:
 |---|---|---|---|---|
 | profiles | `is_public OR id=auth.uid()` | own row | own row | none (hard delete only via admin) |
 | profile_contacts | owner only | — | owner only | owner only |
+| profile_blood_groups | owner only | owner only | owner only | none |
+| members_only_blood_groups (VIEW) | authenticated only; active member for others, own row preserved | — | — | — |
 | public_contact_info (VIEW) | granted anon+authenticated; logic inside | — | — | — |
 | faculties, departments | everyone (`USING true`) | none (service only) | none | none |
 | notices | `published OR author_id=auth.uid()` | own row **AND status='draft'** | none (service) | none (service) |
@@ -413,7 +418,7 @@ Storage policies (on `storage.objects`):
 
 Supabase Auth (email+password). Dashboard settings: **email confirmation OFF** (owner's decision — instant signup; invite tokens are the planned gate instead), minimum password 10, leaked-password protection ON, anonymous sign-in OFF, refresh token rotation ON.
 
-**Signup (`app/auth/signup/page.tsx`):** Zod (name >=2, email, password 10-72) → `supabase.auth.signUp` (instant session; name stored in user metadata) → client inserts `profiles` row (RLS: own) → client inserts `profile_contacts` row with the signup email (RLS: own) → redirect `/`.
+**Signup (`app/auth/signup/page.tsx`):** Zod (name >=2, email, password 10-72, blood group required; জানা নেই stores no row) → `supabase.auth.signUp` (instant session; name stored in user metadata) → client inserts `profiles`, `profile_contacts`, and a `profile_blood_groups` row for a known group under owner-only RLS → redirect `/`.
 
 **Login:** `signInWithPassword`; generic error message (never reveals whether the email exists). Supports `?next=/path` redirect (validated: must start with `/` and not `//`).
 
@@ -672,7 +677,7 @@ To eliminate abrupt content popping and provide feedback during network latency 
 10. **CSP is env-driven** — the Supabase host in `img-src` comes from `NEXT_PUBLIC_SUPABASE_URL`; if you add external image hosts (R2, etc.), extend CSP in `next.config.ts`.
 11. **The middleware matcher** excludes `_next/static`, `_next/image`, favicon, manifest.json, sw.js, swe-worker, and image extensions — don't break this or the PWA/directory will misbehave.
 12. **`current_country` is a fixed dropdown** (`utils/countries.ts`) — free text would shatter filters/aggregation.
-13. **Contact info must be read through the `public_contact_info` VIEW**, never `profile_contacts`.
+13. **Contact info must be read through the `public_contact_info` VIEW**, never `profile_contacts`. Blood group must be read through `members_only_blood_groups`, never `profile_blood_groups`; the blood group view has no anon grant.
 14. **Signup is instant** (no email confirmation) and inserts two rows client-side (`profiles`, `profile_contacts`); the dashboard self-heals a missing row.
 15. **The contact VIEW intentionally has no `security_invoker`** — see §24; adding it back will blank everyone's email in the directory.
 16. **Batch years are auto-computed** — `utils/batch.ts` derives 2001 → `currentYear + 1`. No DB table, no admin UI; a new year appears automatically. Don't "fix" this into a database table.

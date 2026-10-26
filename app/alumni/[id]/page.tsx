@@ -135,11 +135,22 @@ export default async function ProfilePage({
   }
 
   const supabase = await createClient();
-  const { data: contactData } = await supabase
-    .from("public_contact_info")
-    .select("email, phone_number")
-    .eq("profile_id", id)
-    .maybeSingle();
+  const { data: { user: viewer } } = await supabase.auth.getUser();
+  const [{ data: contactData }, { data: viewerProfile }, { data: bloodGroupData }] = await Promise.all([
+    supabase
+      .from("public_contact_info")
+      .select("email, phone_number")
+      .eq("profile_id", id)
+      .maybeSingle(),
+    viewer
+      ? supabase.from("profiles").select("deleted_at").eq("id", viewer.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    viewer
+      ? supabase.from("members_only_blood_groups").select("blood_group").eq("profile_id", id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const canSeeBloodGroup = !!viewer && (!viewerProfile?.deleted_at || viewer.id === id);
+  const bloodGroup = bloodGroupData?.blood_group ?? null;
 
 
   // Row esheche + private → mane malik nijei dekhchhe
@@ -302,6 +313,14 @@ export default async function ProfilePage({
           </div>
         </div>
       </AnimatedSection>
+
+      {canSeeBloodGroup && (
+        <AnimatedSection delay={0.2}>
+          <p className="mt-4 rounded-xl border border-line bg-surface px-4 py-3 text-sm">
+            রক্তের গ্রুপ: {bloodGroup ?? "জানা নেই"}
+          </p>
+        </AnimatedSection>
+      )}
 
       {/* Ekhonkar obostha */}
       <AnimatedSection delay={0.25}>

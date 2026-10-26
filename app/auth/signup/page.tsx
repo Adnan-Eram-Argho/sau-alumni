@@ -20,6 +20,9 @@ const signupSchema = z.object({
     .string()
     .min(10, { message: "পাসওয়ার্ড অন্তত ১০ অক্ষরের হতে হবে" })
     .max(72, { message: "পাসওয়ার্ড ৭২ অক্ষরের মধ্যে রাখুন" }),
+  bloodGroup: z.enum(["", "UNKNOWN", "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]).refine((value) => value !== "", {
+    message: "রক্তের গ্রুপ বেছে নিন",
+  }),
   departmentId: z.string().min(1, { message: "বিভাগ বেছে নাও" }),
   registrationNumber: z
     .string()
@@ -55,6 +58,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
 
   const [departments, setDepartments] = useState<
     { id: string; name: string; facultyName: string | null }[]
@@ -106,6 +110,7 @@ export default function SignupPage() {
       fullName,
       email,
       password,
+      bloodGroup,
       departmentId,
       registrationNumber,
       status,
@@ -196,6 +201,17 @@ export default function SignupPage() {
 
         if (contactError) {
           console.error("Contact insert failed:", contactError.message);
+        }
+        if (result.data.bloodGroup && result.data.bloodGroup !== "UNKNOWN") {
+          const { error: bloodGroupError } = await supabase
+            .from("profile_blood_groups")
+            .insert({ profile_id: data.user.id, blood_group: result.data.bloodGroup });
+          if (bloodGroupError) {
+            console.error("Blood group insert failed:", bloodGroupError.message);
+            setError("প্রোফাইল তৈরি হয়েছে, কিন্তু রক্তের গ্রুপ সেভ হয়নি। প্রোফাইল সেটিংস থেকে সেভ করুন।");
+            router.push("/dashboard/profile");
+            return;
+          }
         }
       }
 
@@ -319,6 +335,15 @@ export default function SignupPage() {
                     {d.facultyName ? ` (${d.facultyName})` : ""}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="bloodGroup" className="block text-sm font-medium">রক্তের গ্রুপ</label>
+              <select id="bloodGroup" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} className={inputClass} required>
+                <option value="">বেছে নিন</option>
+                <option value="UNKNOWN">জানা নেই</option>
+                {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((group) => <option key={group} value={group}>{group}</option>)}
               </select>
             </div>
 

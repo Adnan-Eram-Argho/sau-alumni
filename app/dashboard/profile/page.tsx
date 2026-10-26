@@ -19,7 +19,7 @@ export default async function ProfileEditPage() {
     redirect("/auth/login?next=/dashboard/profile");
   }
 
-  const [{ data }, { data: departments }] = await Promise.all([
+  const [{ data }, { data: departments }, { data: bloodGroupData }] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -33,6 +33,11 @@ export default async function ProfileEditPage() {
       .from("departments")
       .select("id, name, faculties(name)")
       .order("name"),
+    supabase
+      .from("members_only_blood_groups")
+      .select("blood_group")
+      .eq("profile_id", user.id)
+      .maybeSingle(),
   ]);
 
   const deptList = (departments ?? []) as unknown as {
@@ -54,7 +59,7 @@ export default async function ProfileEditPage() {
       <ProfileEditForm
         userId={user.id}
         userEmail={user.email}
-        initial={data as ProfileInitial | null}
+        initial={data ? { ...(data as ProfileInitial), blood_group: bloodGroupData?.blood_group ?? null } : null}
         departments={deptList.map((d) => ({
           id: d.id,
           name: d.name,

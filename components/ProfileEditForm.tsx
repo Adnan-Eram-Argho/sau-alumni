@@ -19,6 +19,7 @@ import {
 
 export type ProfileInitial = {
   id: string;
+  blood_group?: string | null;
   full_name: string | null;
   avatar_url: string | null;
   registration_number: string | null;
@@ -121,6 +122,7 @@ export default function ProfileEditForm({
     higher_study_institution: initial?.higher_study_institution ?? "",
     bio: initial?.bio ?? "",
   });
+  const [bloodGroup, setBloodGroup] = useState(initial?.blood_group ?? "");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -200,6 +202,18 @@ export default function ProfileEditForm({
         return;
       }
 
+      const { error: bloodGroupError } = await supabase
+        .from("profile_blood_groups")
+        .upsert(
+          { profile_id: userId, blood_group: bloodGroup || null },
+          { onConflict: "profile_id" }
+        );
+      if (bloodGroupError) {
+        console.error("Blood group save failed:", bloodGroupError.message);
+        setError("রক্তের গ্রুপ সেভ করতে সমস্যা হয়েছে।");
+        return;
+      }
+
       // Self-heal: profile_contacts e jeno email thake
       const emailToUse =
         userEmail || (await supabase.auth.getUser()).data.user?.email;
@@ -236,6 +250,13 @@ export default function ProfileEditForm({
 
   return (
     <form onSubmit={handleSave} className="mt-8 space-y-5">
+      <div>
+        <label htmlFor="bloodGroup" className="block text-sm font-medium">রক্তের গ্রুপ</label>
+        <select id="bloodGroup" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} className={inputClass}>
+          <option value="">জানা নেই</option>
+          {["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"].map((group) => <option key={group} value={group}>{group}</option>)}
+        </select>
+      </div>
       {/* প্রোফাইল ছবি */}
       <div className="glass-card rounded-2xl p-5">
         <h2 className="text-sm font-medium text-ink/50">প্রোফাইল ছবি</h2>
