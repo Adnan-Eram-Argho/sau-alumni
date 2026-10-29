@@ -7,9 +7,10 @@ import { BATCH_YEARS } from "@/utils/batch";
 
 type Props = {
   countries: string[];
+  departments: { id: string; name: string }[];
 };
 
-export default function DirectoryFilters({ countries }: Props) {
+export default function DirectoryFilters({ countries, departments }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -18,6 +19,7 @@ export default function DirectoryFilters({ countries }: Props) {
   const [loc, setLoc] = useState(searchParams.get("loc") ?? "all");
   const [country, setCountry] = useState(searchParams.get("country") ?? "");
   const [batch, setBatch] = useState(searchParams.get("batch") ?? "");
+  const [department, setDepartment] = useState(searchParams.get("department") ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -53,10 +55,11 @@ export default function DirectoryFilters({ countries }: Props) {
     setLoc("all");
     setCountry("");
     setBatch("");
+    setDepartment("");
     router.replace(pathname);
   }
 
-  const hasFilter = text || loc !== "all" || country || batch;
+  const hasFilter = text || loc !== "all" || country || batch || department;
 
   const selectClass =
     "rounded-xl border border-line bg-surface px-3 py-2.5 text-sm transition-all focus:border-sau focus:outline-none focus:ring-2 focus:ring-sau/10";
@@ -87,6 +90,21 @@ export default function DirectoryFilters({ countries }: Props) {
           <option key={y} value={y}>
             ব্যাচ {y}
           </option>
+        ))}
+      </select>
+
+      <select
+        value={department}
+        onChange={(e) => {
+          setDepartment(e.target.value);
+          applyParams({ department: e.target.value || null });
+        }}
+        className={selectClass}
+        aria-label="বিভাগ"
+      >
+        <option value="">সব বিভাগ</option>
+        {departments.map((d) => (
+          <option key={d.id} value={d.id}>{d.name}</option>
         ))}
       </select>
 

@@ -28,23 +28,11 @@ export default async function NewNoticePage() {
     redirect("/dashboard");
   }
 
-  const [{ data: faculties }, { data: departments }] = await Promise.all([
-    supabase
-      .from("faculties")
-      .select("id, name")
-      .order("name"),
-    supabase
-      .from("departments")
-      .select("id, name, faculty_id, faculties(name)")
-      .order("name"),
-  ]);
-
-  const deptList = (departments ?? []) as unknown as {
-    id: string;
-    name: string;
-    faculty_id: string | null;
-    faculties: { name: string } | null;
-  }[];
+  const { data: faculties } = await supabase.from("faculties").select("id, name");
+  const faculty = (faculties ?? []).find((item) => item.name === "Agribusiness Management");
+  const { data: departments } = faculty
+    ? await supabase.from("departments").select("id, name").eq("faculty_id", faculty.id).order("name")
+    : { data: [] };
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -55,12 +43,12 @@ export default async function NewNoticePage() {
 
       <NoticeForm
         userId={user.id}
-        faculties={(faculties ?? []).map((f) => ({ id: f.id, name: f.name }))}
-        departments={deptList.map((d) => ({
+        facultyId={faculty?.id ?? ""}
+        departments={(departments ?? []).map((d) => ({
           id: d.id,
           name: d.name,
-          facultyId: d.faculty_id,
-          facultyName: d.faculties?.name ?? null,
+          facultyId: faculty?.id ?? null,
+          facultyName: faculty?.name ?? null,
         }))}
       />
     </div>

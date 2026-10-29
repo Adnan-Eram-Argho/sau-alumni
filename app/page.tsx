@@ -126,21 +126,21 @@ export default async function HomePage() {
             <AnimatedSection delay={0.1}>
               <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium tracking-wide text-emerald-200 backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5" />
-                শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · ঢাকা
+                শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · কৃষি অর্থনীতি
               </p>
             </AnimatedSection>
 
             <AnimatedSection delay={0.25}>
               <h1 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-snug sm:text-5xl sm:leading-tight lg:text-6xl lg:leading-tight">
-                এক ক্যাম্পাস, এক পরিবার —{" "}
-                <span className="gradient-text">সারা পৃথিবীতে</span>
+                কৃষি অর্থনীতির এক পরিবার —{" "}
+                <span className="gradient-text">SAU-র alumni ও শিক্ষার্থী</span>
               </h1>
             </AnimatedSection>
 
             <AnimatedSection delay={0.4}>
               <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-emerald-100/90 sm:text-lg">
-                SAU-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের নিজেদের নেটওয়ার্ক। তোমার
-                ব্যাচমেট কোথায় আছে — দেশে না বিদেশে — এক সার্চেই খুঁজে নাও।
+                SAU-এর কৃষি অর্থনীতি বিভাগের প্রাক্তন ও বর্তমান শিক্ষার্থীদের
+                নেটওয়ার্ক। ব্যাচমেটদের খুঁজুন এবং একে অন্যের সঙ্গে যুক্ত থাকুন।
               </p>
             </AnimatedSection>
 
@@ -200,6 +200,22 @@ export default async function HomePage() {
             </AnimatedSection>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 py-16">
+        <AnimatedSection>
+          <div className="rounded-2xl border border-line bg-surface p-8 sm:p-10">
+            <h2 className="text-2xl font-bold sm:text-3xl">কৃষি অর্থনীতি বিভাগের কমিউনিটি</h2>
+            <p className="mt-4 max-w-3xl leading-relaxed text-ink/65">
+              SAU-এর কৃষি অর্থনীতি বিভাগের শিক্ষার্থী ও alumni-দের সঙ্গে যুক্ত থাকুন।
+              এই বিষয়ে পড়াশোনা করে agribusiness, ব্যাংকিং, গবেষণা, সম্প্রসারণ ও
+              নীতিনির্ধারণসহ বিভিন্ন ক্ষেত্রে কাজের সুযোগ রয়েছে।
+            </p>
+            <Link href="/auth/signup" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-sau px-6 py-3 font-semibold text-white hover:bg-sau-hover">
+              কমিউনিটিতে যোগ দিন <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </AnimatedSection>
       </section>
 
       {/* Niche CTA */}

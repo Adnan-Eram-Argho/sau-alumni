@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s — SAU Alumni",
   },
   description:
-    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের ডিরেক্টরি। নাম, ব্যাচ, বিভাগ বা দেশ দিয়ে সার্চ করে খুঁজে নাও তোমার ব্যাচমেটদের। Connect with SAU alumni and students worldwide.",
+    "শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় (SAU)-র প্রাক্তন ও বর্তমান শিক্ষার্থীদের ডিরেক্টরি। নাম, ব্যাচ, বিভাগ বা দেশ দিয়ে সার্চ করে খুঁজে নাও তোমার ব্যাচমেটদের। Connect with SAU alumni and students worldwide. Agricultural Economics and Agribusiness alumni and students network.",
   keywords: [
     "SAU",
     "SAU alumni",
@@ -42,6 +42,9 @@ export const metadata: Metadata = {
     "শেরে-বাংলা নগর",
     "SAU Dhaka",
     "কৃষি বিশ্ববিদ্যালয়",
+    "Agricultural Economics",
+    "Agribusiness",
+    "কৃষি অর্থনীতি",
   ],
   category: "education",
   alternates: {

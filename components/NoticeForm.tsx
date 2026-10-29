@@ -52,14 +52,14 @@ async function deleteOldImage(url: string) {
 
 export default function NoticeForm({
   userId,
-  faculties,
+  facultyId: targetFacultyId,
   departments,
   mode = "create",
   noticeId,
   initial,
 }: {
   userId: string;
-  faculties: { id: string; name: string }[];
+  facultyId: string;
   departments: {
     id: string;
     name: string;
@@ -80,9 +80,11 @@ export default function NoticeForm({
   const [savedImageUrl, setSavedImageUrl] = useState<string | null>(
     initial?.image_url ?? null
   );
-  const [facultyId, setFacultyId] = useState(initial?.faculty_id ?? "");
   const [departmentId, setDepartmentId] = useState(
     initial?.department_id ?? ""
+  );
+  const [targetEveryone, setTargetEveryone] = useState(
+    initial ? initial.faculty_id === null : false
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,9 +92,7 @@ export default function NoticeForm({
   const inputClass =
     "mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:border-sau focus:outline-none";
 
-  const filteredDepts = facultyId
-    ? departments.filter((d) => d.facultyId === facultyId)
-    : departments;
+  const filteredDepts = departments;
 
   function slugify(text: string, suffix = "") {
     const s = text
@@ -116,8 +116,8 @@ export default function NoticeForm({
       title: result.data.title,
       content: result.data.content,
       image_url: imageUrl,
-      faculty_id: facultyId || null,
-      department_id: departmentId || null,
+      faculty_id: targetEveryone ? null : targetFacultyId || null,
+      department_id: targetEveryone ? null : departmentId || null,
     };
 
     setLoading(true);
@@ -244,27 +244,24 @@ export default function NoticeForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label htmlFor="faculty" className="block text-sm font-medium">
-            কার জন্য? <span className="text-ink/40">(খালি = সবার জন্য)</span>
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={targetEveryone}
+              onChange={(e) => {
+                setTargetEveryone(e.target.checked);
+                if (e.target.checked) setDepartmentId("");
+              }}
+              className="accent-sau"
+            />
+            সবার জন্য প্রকাশ করুন
           </label>
-          <select
-            id="faculty"
-            value={facultyId}
-            onChange={(e) => {
-              setFacultyId(e.target.value);
-              setDepartmentId("");
-            }}
-            className={inputClass}
-          >
-            <option value="">সবার জন্য</option>
-            {faculties.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
+          <p className="mt-1 text-xs text-ink/50">
+            {targetEveryone
+              ? "নোটিশটি সব faculty-র জন্য যাবে।"
+              : "ডিফল্টভাবে কৃষি অর্থনীতি কমিউনিটির জন্য যাবে।"}
+          </p>
         </div>
-
         <div>
           <label htmlFor="department" className="block text-sm font-medium">
             নির্দিষ্ট বিভাগ (ঐচ্ছিক)
@@ -274,6 +271,7 @@ export default function NoticeForm({
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
             className={inputClass}
+            disabled={targetEveryone}
           >
             <option value="">— না —</option>
             {filteredDepts.map((d) => (

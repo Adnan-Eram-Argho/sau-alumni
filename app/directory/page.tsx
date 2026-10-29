@@ -31,8 +31,8 @@ export default async function DirectoryPage({
   const params = await searchParams;
   const before = typeof params.before === "string" ? params.before : null;
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const facultyId =
-    typeof params.faculty === "string" && params.faculty ? params.faculty : null;
+  const departmentId =
+    typeof params.department === "string" && params.department ? params.department : null;
   const loc = params.loc === "bd" || params.loc === "abroad" ? params.loc : "all";
   const country =
     typeof params.country === "string" && params.country ? params.country : null;
@@ -56,16 +56,20 @@ export default async function DirectoryPage({
     return data;
   })();
 
-  // Faculty-page link theke ashle (?faculty=...) — oi faculty-r dept
-  // Etar result lagbe main query-te, tai await kora mandatory
-  let departmentIds: string[] | null = null;
-  if (facultyId) {
-    const { data: depts } = await supabase
-      .from("departments")
-      .select("id")
-      .eq("faculty_id", facultyId);
-    departmentIds = (depts ?? []).map((d) => d.id);
-  }
+  const { data: faculties } = await supabase
+    .from("faculties")
+    .select("id, name");
+  const agEconomicsFaculty = (faculties ?? []).find(
+    (faculty) => faculty.name === "Agribusiness Management"
+  );
+  const { data: departments } = agEconomicsFaculty
+    ? await supabase
+        .from("departments")
+        .select("id, name")
+        .eq("faculty_id", agEconomicsFaculty.id)
+        .order("name")
+    : { data: [] };
+  const departmentIds = (departments ?? []).map((department) => department.id);
 
   // Sob filter + pagination EK-I query-te (spec Section 27)
   function baseQuery() {
@@ -89,7 +93,10 @@ export default async function DirectoryPage({
       else query = query.neq("current_country", "Bangladesh");
     }
     if (batch) query = query.eq("graduation_year", batch);
-    if (departmentIds) query = query.in("department_id", departmentIds);
+    query = query.in("department_id", departmentIds);
+    if (departmentId && departmentIds.includes(departmentId)) {
+      query = query.eq("department_id", departmentId);
+    }
 
     return query;
   }
@@ -97,7 +104,7 @@ export default async function DirectoryPage({
   let profiles: DirectoryProfile[] = [];
   let queryError: string | null = null;
 
-  if (departmentIds === null || departmentIds.length > 0) {
+  if (departmentIds.length > 0) {
     let query = baseQuery();
 
     if (q) {
@@ -165,7 +172,7 @@ export default async function DirectoryPage({
   function pageUrl(cursor: string) {
     const sp = new URLSearchParams();
     if (q) sp.set("q", q);
-    if (facultyId) sp.set("faculty", facultyId);
+    if (departmentId) sp.set("department", departmentId);
     if (loc !== "all") sp.set("loc", loc);
     if (country) sp.set("country", country);
     if (batch) sp.set("batch", String(batch));
@@ -192,7 +199,13 @@ export default async function DirectoryPage({
         </div>
       </AnimatedSection>
 
-      <DirectoryFilters countries={countries} />
+      <DirectoryFilters
+        countries={countries}
+        departments={(departments ?? []).map((department) => ({
+          id: department.id,
+          name: department.name,
+        }))}
+      />
 
       {queryError ? (
         <AnimatedSection>

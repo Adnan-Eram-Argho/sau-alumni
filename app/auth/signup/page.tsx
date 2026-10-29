@@ -94,24 +94,27 @@ export default function SignupPage() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("departments")
-      .select("id, name, faculties(name)")
-      .order("name")
-      .then(({ data }) => {
-        const list = (data ?? []) as unknown as {
-          id: string;
-          name: string;
-          faculties: { name: string } | null;
-        }[];
-        const mapped = list.map((d) => ({
-          id: d.id,
-          name: d.name,
-          facultyName: d.faculties?.name ?? null,
-        }));
-        setDepartments(mapped);
-        if (mapped.length === 1) setDepartmentId(mapped[0].id);
-      });
+    (async () => {
+      const { data: faculties } = await supabase
+        .from("faculties")
+        .select("id, name");
+      const faculty = (faculties ?? []).find(
+        (item) => item.name === "Agribusiness Management"
+      );
+      if (!faculty) return;
+      const { data } = await supabase
+        .from("departments")
+        .select("id, name")
+        .eq("faculty_id", faculty.id)
+        .order("name");
+      const mapped = (data ?? []).map((department) => ({
+        id: department.id,
+        name: department.name,
+        facultyName: faculty.name,
+      }));
+      setDepartments(mapped);
+      if (mapped.length === 1) setDepartmentId(mapped[0].id);
+    })();
   }, []);
 
   async function handleSignup(e: FormEvent) {
@@ -277,7 +280,7 @@ export default function SignupPage() {
           className="max-h-[85vh] flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-surface p-8 sm:p-10"
         >
           <h1 className="text-2xl font-bold">নতুন অ্যাকাউন্ট খুলুন</h1>
-          <p className="mt-1 text-sm text-ink/50">SAU Alumni নেটওয়ার্কে যোগ দিন</p>
+          <p className="mt-1 text-sm text-ink/50">কৃষি অর্থনীতি বিভাগের SAU Alumni নেটওয়ার্কে যোগ দিন</p>
 
           <form onSubmit={handleSignup} className="mt-8 space-y-5">
             <p className={sectionTitle}>অ্যাকাউন্ট</p>

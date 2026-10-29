@@ -59,11 +59,11 @@ export default function HeroCarousel({ slides }: { slides: Slide[] }) {
                 {/* Center lekha — sob slide-r upore ek */}
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 text-center">
                     <p className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-4 py-1.5 text-sm font-medium tracking-wide text-emerald-100 backdrop-blur-sm">
-                        শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · ঢাকা
+                        শেরে-বাংলা কৃষি বিশ্ববিদ্যালয় · কৃষি অর্থনীতি
                     </p>
                     <h1 className="mx-auto mt-5 max-w-3xl text-3xl font-bold leading-snug drop-shadow-lg sm:text-5xl sm:leading-tight">
-                        এক ক্যাম্পাস, এক পরিবার —{" "}
-                        <span className="text-amber-300">সারা পৃথিবীতে</span>
+                        কৃষি অর্থনীতির এক পরিবার —{" "}
+                        <span className="text-amber-300">SAU-র alumni ও শিক্ষার্থী</span>
                     </h1>
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                         <Link
