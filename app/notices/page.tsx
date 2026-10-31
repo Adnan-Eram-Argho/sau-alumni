@@ -63,13 +63,17 @@ export default async function NoticesPage() {
       ) : (
         <div className="mt-8 space-y-4">
           {notices.map((n, i) => (
-            <AnimatedSection key={n.id} delay={Math.min(i * 0.06, 0.4)}>
+            <AnimatedSection
+              key={n.id}
+              delay={Math.min(i * 0.06, 0.4)}
+              className="min-w-0"
+            >
               <Link
                 href={`/notices/${n.slug}`}
-                className="glass-card gradient-border block rounded-2xl p-5 transition-all"
+                className="glass-card gradient-border block min-w-0 rounded-2xl p-5 transition-all"
               >
                 <p className="flex flex-wrap items-center gap-2 font-semibold">
-                  <span className="truncate">{n.title}</span>
+                  <span className="min-w-0 truncate">{n.title}</span>
                   {n.pinned && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
                       <Pin className="h-3 w-3" />

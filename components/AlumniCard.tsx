@@ -59,7 +59,7 @@ export default function AlumniCard({
     <Link
       href={`/alumni/${profile.id}`}
       aria-label={`${profile.full_name} এর প্রোফাইল`}
-      className="glass-card gradient-border block rounded-2xl p-5 transition-all"
+      className="glass-card gradient-border block min-w-0 rounded-2xl p-5 transition-all"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -83,7 +83,7 @@ export default function AlumniCard({
                   .toUpperCase() || "?"}
               </span>
             )}
-            <span className="truncate">{profile.full_name}</span>
+            <span className="min-w-0 truncate">{profile.full_name}</span>
             {profile.is_verified && (
               <BadgeCheck className="h-4 w-4 shrink-0 text-sau dark:text-emerald-400" />
             )}
@@ -107,21 +107,21 @@ export default function AlumniCard({
 
       <p className="mt-3 flex items-center gap-1.5 truncate text-sm text-ink/70">
         {description.icon && <description.icon className="h-3.5 w-3.5 shrink-0 text-sau/50" />}
-        {description.text}
+        <span className="min-w-0 truncate">{description.text}</span>
       </p>
 
       {contact && (
         <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/45">
           {contact.email && (
-            <span className="flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              {contact.email}
+            <span className="flex min-w-0 max-w-full items-center gap-1">
+              <Mail className="h-3 w-3 shrink-0" />
+              <span className="min-w-0 truncate">{contact.email}</span>
             </span>
           )}
           {contact.phone_number && (
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              {contact.phone_number}
+            <span className="flex min-w-0 max-w-full items-center gap-1">
+              <Phone className="h-3 w-3 shrink-0" />
+              <span className="min-w-0 truncate">{contact.phone_number}</span>
             </span>
           )}
         </p>

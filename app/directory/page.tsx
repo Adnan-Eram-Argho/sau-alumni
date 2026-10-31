@@ -232,7 +232,11 @@ export default async function DirectoryPage({
       ) : (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {profiles.map((p, i) => (
-            <AnimatedSection key={p.id} delay={Math.min(i * 0.05, 0.4)}>
+            <AnimatedSection
+              key={p.id}
+              delay={Math.min(i * 0.05, 0.4)}
+              className="min-w-0"
+            >
               <AlumniCard profile={p} contact={contactMap[p.id]} />
             </AnimatedSection>
           ))}

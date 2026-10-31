@@ -161,7 +161,7 @@ export default function AdminMemberList({
           return (
             <div
               key={m.id}
-              className={`group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4.5 backdrop-blur-sm shadow-sm transition-all duration-200 hover:border-sau/30 hover:shadow-md ${m.deleted ? "opacity-60 bg-surface/40" : ""
+              className={`group flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-2xl border border-line bg-surface/80 p-4.5 backdrop-blur-sm shadow-sm transition-all duration-200 hover:border-sau/30 hover:shadow-md ${m.deleted ? "opacity-60 bg-surface/40" : ""
                 }`}
             >
               <div className="min-w-0">

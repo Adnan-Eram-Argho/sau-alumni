@@ -60,10 +60,10 @@ export default function MyNoticesList({ notices }: { notices: Notice[] }) {
         {notices.map((n) => (
           <div
             key={n.id}
-            className="rounded-2xl border border-line bg-surface p-4 shadow-sm"
+            className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-sm"
           >
             <p className="flex flex-wrap items-center gap-2 font-medium">
-              <span className="truncate">{n.title}</span>
+              <span className="min-w-0 truncate">{n.title}</span>
               {n.status === "draft" && (
                 <span className="rounded-full bg-base px-2.5 py-0.5 text-xs font-medium text-ink/60">
                   📝 খসড়া
